@@ -1,23 +1,7 @@
 """CareerPilot HTTP 服务入口。
 
-为什么要有这一层：
-
-    在此之前，项目只能通过 `python run.py --jd "..."` 在命令行跑一次。
-    有了 HTTP 接口之后，"服务"的边界才真正成立：
-    外部（网页、其他服务、定时任务）只认这个接口，
-    内部怎么实现可以随时换，调用方完全不受影响。
-
-接口形态（2026-10-16 改造后）：
-
-    POST /analyze          -> 202 + task_id   异步，立刻回执
-    GET  /tasks/{task_id}  -> 状态 / 结果      轮询
-    POST /analyze/sync     -> 完整结果         同步，用于调试与降级
-    GET  /health           -> {"status":"ok"} 探活
-
-为什么要改成异步：
-    一次分析要 50~120 秒，超过网关、浏览器、负载均衡常见的 30~60 秒超时。
-    同步等待的典型后果是"连接被断开，但服务端还在跑"——
-    用户拿不到结果，也不知道该不该重试，最坏时重复提交烧两份钱。
+接口：POST /analyze（202 + task_id）、GET /tasks/{task_id}、POST /analyze/sync、GET /health。
+一次分析要 50~120 秒，超过网关与浏览器常见超时，所以主路径走异步；同步接口用于调试与 Redis 不可用时的降级。
 """
 from __future__ import annotations
 

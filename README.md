@@ -1,397 +1,183 @@
 # CareerPilot MCP Agent
 
-CareerPilot 是一个面向 AI 应用开发实习求职场景的本地 Agent。输入岗位 JD 后，系统会分析岗位要求，从候选人知识库检索可核验经历，生成匹配报告、定制简历要点和面试题，并通过 MCP 工具记录岗位或生成文档。
+输入一段岗位 JD，输出结构化匹配报告、定制简历要点和面试题，并通过 MCP 工具把岗位记录写入 SQLite。
 
-项目重点不是“再做一个聊天机器人”，而是展示如何把大模型应用拆分为可编排、可追踪、可评测的工作流和标准化工具。
+FastAPI 提供 HTTP 接口，Redis Stream 做异步任务队列（含幂等与限流），LangGraph 编排分析流程，FAISS 做本地向量检索，3 个 stdio MCP Server 提供工具能力。
 
-> **30 秒版**：输入一段岗位 JD → LangGraph 编排 9 个节点做结构化分析、FAISS 检索可核验证据、MCP 工具路由 → 生成匹配报告 / 简历要点 / 面试题；外面套一层 FastAPI 服务，重活丢给 Redis Stream 队列与独立 worker，Docker Compose 一条命令拉起，配 20 例端到端评测和一套 Recall@k 检索评测。
->
-> **想快速判断值不值得深聊，看这三处**（也是踩坑最多的地方）：
->
-> 1. 「Redis 在这里的四种角色」—— 为什么用 Stream 而不用 List，任务怎么做到不丢
-> 2. 「为什么幂等是正确性要求而不是优化」—— 一次分析有副作用，重复提交会写脏数据
-> 3. 「检索质量评测 Recall@k」—— 指标挖出了一个写了但从未生效过的功能
->
-> 这是本地个人工具，没有真实用户与线上流量；边界写在文末「已知限制」，迭代记录在 [docs/EVOLUTION.md](docs/EVOLUTION.md)。
+## 功能
 
-## 项目亮点
+- **JD 结构化分析**：提取岗位、公司、级别、要求与检索关键词
+- **经历检索**：向量检索返回内容、来源文件与距离分数
+- **工具路由**：Agent 按需调用简历查询 / 岗位管理 / 文档生成三类工具，最多 3 轮
+- **材料生成**：匹配报告、1~3 条简历要点、5 道面试题，均带 `evidence_source`
+- **岗位记录**：写入 SQLite，支持按状态筛选与更新
 
-- 使用 LangGraph 编排岗位分析、RAG 检索、MCP 工具路由、报告生成、简历改写、面试题生成与岗位保存。
-- 自建 3 个本地 stdio MCP Server，提供简历查询、岗位管理和 Markdown 文档生成能力。
-- 使用 DashScope Embedding 和 FAISS 构建个人材料知识库，检索结果保留来源与距离分数。
-- 在高相关结果不足时触发查询改写和补充检索，避免只根据固定返回条数判断召回质量。
-- 使用 Pydantic 约束岗位分析、简历要点与面试题结构，模型失败时自动重试。
-- 使用 Loguru 记录节点、模型、MCP 工具、RAG 来源和耗时。
-- 提供 10 个真实岗位样例和 10 个变体组成的离线评测集。
+## 快速开始
 
-## 当前状态
+方式一，Docker（需要 Docker Desktop）：
 
-| 能力 | 状态 | 说明 |
-| --- | :---: | --- |
-| JD 结构化分析 | 已完成 | 提取岗位、公司、级别、要求与检索关键词 |
-| FAISS 经历检索 | 已完成 | 返回内容、来源和距离分数 |
-| 查询改写与补充检索 | 已完成 | 高相关结果不足时触发 |
-| 3 个 MCP Server | 已完成 | 当前使用本地 stdio 传输 |
-| 简历要点和面试题 | 已完成 | Pydantic 结构化输出 |
-| SQLite 岗位记录 | 已完成 | 支持保存、筛选和状态更新 |
-| 20 例离线评测 | 已完成 | 默认关闭真实 MCP 写操作 |
-| 离线测试与 CI | 已完成 | 不需要 API Key，覆盖数据库与文档服务 |
-| Streamlit 界面 | 计划中 | 当前使用命令行入口 |
-| Docker 部署 | 已完成 | Dockerfile + docker-compose.yml，一条命令启动 |
-| 异步任务与 Redis | 已完成 | 提交立刻返回 task_id，worker 后台执行，带幂等去重与限流 |
+```powershell
+Copy-Item .env.example .env      # 填 LLM_API_KEY 与 DASHSCOPE_API_KEY
+docker compose up -d
+docker compose logs -f           # 出现 health 即就绪
+```
 
-## 系统架构
+服务起在 <http://localhost:8000/docs>。首次启动时 `docker-entrypoint.sh` 会检测 `knowledge/index/`，没有索引就自动构建，已有则跳过。
+
+方式二，本地 Python：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env      # 同上，填 Key
+python -m knowledge.build_index  # 构建向量索引
+python run.py --jd-file examples/sample_jd.txt
+```
+
+## 架构
 
 ```mermaid
 flowchart LR
     U[岗位 JD] --> API[FastAPI]
-    API -->|入队| Q[(Redis 任务队列)]
-    Q -->|取任务| W[Worker 常驻进程]
-    W --> A[LangGraph Agent]
-    W -->|写回| ST[(Redis 任务状态)]
-    API -->|轮询结果| ST
+    API -->|XADD| Q[(Redis Stream)]
+    Q -->|消费组| W[Worker]
+    W --> A[LangGraph]
+    API -->|XREAD 状态| ST[(Redis 状态)]
+    W -->|HSET 状态| ST
 
     subgraph G[工作流]
-        P[岗位结构化分析] --> R[经历检索]
-        R --> T[工具决策]
-        T --> M[匹配报告]
-        M --> B[简历要点]
-        B --> QQ[面试题]
-        QQ --> SV[保存岗位]
+        P[岗位分析] --> R[经历检索] --> T[工具决策] --> M[匹配报告] --> B[简历要点] --> QQ[面试题] --> SV[保存岗位]
     end
 
     A --> P
-    R <--> K[(FAISS 知识库)]
-    T <--> RM[Resume MCP]
-    T <--> JM[Job MCP]
-    T <--> DM[Document MCP]
-    JM <--> DB[(SQLite)]
+    R <--> K[(FAISS 索引)]
+    T <--> MC[MCP Server ×3]
+    SV <--> DB[(SQLite)]
 ```
 
-API 与 Worker 是同镜像的两个进程：API 只负责收请求和派发，重活全部由 Worker 消费队列执行，互不阻塞。
+api 与 worker 用同一个镜像、不同启动命令。api 只收请求和派发任务，分析全部由 worker 执行。
 
-MCP Server 当前均由客户端以 stdio 子进程启动。项目没有将它们描述为远程服务；如需跨主机部署，可以在后续版本中迁移到 Streamable HTTP。
-
-## 工作流
-
-```text
-岗位 JD
-  -> 提取岗位要求和关键词
-  -> 第一轮向量检索
-  -> 必要时改写查询并补充检索
-  -> Agent 按需调用 MCP 工具
-  -> 生成带来源的匹配报告
-  -> 生成 1-3 条简历要点
-  -> 生成 5 道面试题和回答要点
-  -> 通过 Job MCP 保存岗位
-```
-
-## 目录结构
-
-```text
-careerpilot/
-├── agent/                 # LangGraph 状态、节点、Schema、模型和 MCP 适配
-├── knowledge/
-│   ├── docs/              # 可公开的脱敏示例资料
-│   ├── build_index.py     # 构建 FAISS 索引
-│   └── retrieve.py        # 检索、查询改写和补充检索
-├── tasks/                 # 异步任务层
-│   ├── store.py           # 队列 / 状态 / 幂等 / 限流，Redis 操作全在这里
-│   ├── worker.py          # 常驻消费者进程
-│   └── runner.py          # 执行一次分析的共享入口，API 与 worker 复用
-├── mcp_servers/           # resume / job / document 三个 MCP Server
-├── eval/                  # 20 例评测集和已有结果
-├── examples/              # 可直接运行的示例 JD
-├── scripts/               # 图结构和 MCP 演示脚本
-├── data/                  # 本地 SQLite 数据，数据库文件不提交
-├── output/                # 生成文档，不提交
-├── run.py                 # 命令行入口
-├── mcp.json               # MCP Server 配置
-├── requirements.txt       # API 运行期依赖，Docker 镜像只装这一个
-└── requirements-ui.txt    # 界面层依赖（Streamlit），刻意不进 API 镜像
-```
-
-## 快速开始
-
-### 方式一：Docker 一键启动（推荐，不用配 Python 环境）
-
-确保已安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 并处于运行状态。
-
-```powershell
-Copy-Item .env.example .env      # 填入 LLM_API_KEY 和 DASHSCOPE_API_KEY
-docker compose up -d             # 首次会构建镜像并自动建立向量索引
-docker compose logs -f           # 查看日志，出现 health 即就绪
-```
-
-服务起来后访问 <http://localhost:8000/docs>。启动流程由 `docker-entrypoint.sh` 控制：检测到 `knowledge/index/` 中没有索引时会自动构建，已存在则跳过——索引存在数据卷里，不会每次重复烧 embedding 的费用。
-
-常用命令：
-
-```powershell
-docker compose down          # 停止（数据卷保留，岗位记录和索引都还在）
-docker compose ps            # 查看运行状态与健康检查
-docker compose logs -f api   # 只看服务日志
-```
-
-换了新的候选资料后需要重建索引：
-
-```powershell
-# 把 docker-compose.yml 里的 FORCE_REBUILD_INDEX 改成 "1"，然后
-docker compose up -d --force-recreate api
-```
-
-> 说明：`.env` 已写进 `.dockerignore`，密钥不会进入镜像层；容器以非 root 用户运行；SQLite、输出文档、日志和索引分别存放在四个具名数据卷里。
-
-### 方式二：本地 Python 环境
-
-#### 1. 创建环境
-
-建议使用 Python 3.10 或更高版本。
-
-```powershell
-git clone https://github.com/your-name/careerpilot-mcp-agent.git
-Set-Location careerpilot-mcp-agent
-
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-### 2. 配置模型
-
-```powershell
-Copy-Item .env.example .env
-```
-
-编辑 `.env`：
-
-```dotenv
-LLM_MODEL=qwen-plus
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_API_KEY=your_key
-DASHSCOPE_API_KEY=your_key
-EMBEDDING_MODEL=text-embedding-v3
-```
-
-`.env` 已被 Git 忽略。不要把真实 API Key 写入 README、示例文件或提交历史。
-
-如需把测试数据写到临时位置，也可以设置 `CAREERPILOT_DB_PATH` 和 `CAREERPILOT_OUTPUT_DIR`；未设置时分别使用 `data/jobs.db` 和 `output/`。
-
-### 3. 准备候选人资料
-
-`knowledge/docs/` 中包含用于演示的脱敏资料。正式使用时，可以将个人材料放进 `knowledge/docs/private/`，或自行调整加载目录。私人目录默认不会被 Git 提交。
-
-### 4. 构建向量索引
-
-```powershell
-python -m knowledge.build_index
-```
-
-索引保存在 `knowledge/index/`，可以根据文档重新生成，因此默认不提交。
-
-### 5. 运行完整示例
-
-```powershell
-python run.py --jd-file examples/sample_jd.txt
-```
-
-也可以直接输入 JD：
-
-```powershell
-python run.py --jd "招聘 AI 应用开发实习生，要求熟悉 Python、RAG、LangGraph 和 MCP"
-```
-
-运行后可查看：
-
-- 终端中的匹配报告、简历要点和面试题；
-- `logs/` 中的节点、模型、工具和检索轨迹；
-- `data/jobs.db` 中保存的岗位记录；
-- Agent 调用 Document MCP 后写入 `output/` 的 Markdown 文档。
-
-## 异步任务与 Redis
-
-一次分析要跑 50~120 秒，远超网关与浏览器常见的 30~60 秒超时。所以 `POST /analyze` 是异步的：立刻回一个 `task_id`，由后台 worker 慢慢跑，客户端用 `task_id` 轮询结果。
-
-```powershell
-# 1. 提交，毫秒级拿到回执
-$r = Invoke-RestMethod -Uri http://localhost:8000/analyze -Method Post `
-     -ContentType "application/json" -Body '{"jd":"招聘 AI 应用开发实习生，要求 Python 与 RAG 经验"}'
-# 2. 轮询结果
-Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
-```
-
-> Windows 的 `curl` 其实是 `Invoke-WebRequest` 的别名，`curl -I xxx` 会被解析成 `-InFile` 而卡住要你输 URL。要么用 `curl.exe`，要么直接用上面这种 PowerShell 写法。
+## 接口
 
 | 接口 | 行为 |
 | --- | --- |
 | `POST /analyze` | 202 + `task_id`；命中幂等时返回 `reused=true` 并复用已有任务 |
 | `GET /tasks/{task_id}` | 返回 `pending / running / done / failed`，完成后带完整结果 |
-| `POST /analyze/sync` | 同步执行，直接返回完整结果（本地调试与降级路径） |
+| `POST /analyze/sync` | 同步执行并直接返回结果，用于调试与降级 |
+| `GET /health` | 探活，不检查 Redis |
 
-### Redis 在这里的四种角色
+状态码：`429` 触发限流，`404` 任务不存在或已过期（结果保留 24 小时），`502` 上游失败，`503` 任务存储不可用。
 
-| 角色 | 数据结构 | 解决什么 |
-| --- | --- | --- |
-| 任务队列 | Stream + 消费组 | 削峰与异步化；未 ACK 的任务可被其他 worker 认领重做 |
-| 状态与结果 | Hash + TTL 24h | 轮询取结果；必须设 TTL，否则内存会无限增长 |
-| 幂等去重 | `SET NX EX` | 同一份 JD 重复提交直接复用旧任务，不重复烧模型调用 |
-| 并发限流 | `INCR` + 过期 | 保护上游模型配额，避免队列被瞬间撑爆 |
-
-**为什么用 Stream 而不是 List**：`BRPOP` 一旦把任务取出来，Redis 里就再没有这条记录了，worker 崩溃任务就永久丢失。Stream 的 `XACK` 让已投递但未确认的消息留在 PEL 里，用 `XAUTOCLAIM` 可以转移给别的 worker 重做——这正是"任务丢了怎么办"的答案。
-
-**为什么不做热点缓存**：这是 QPS 极低的重计算服务，缓存命中率趋近于 0，硬加缓存只会增加复杂度和失效风险。Redis 在这里的价值是削峰、异步、幂等、限流，不是加速读取。
-
-**为什么幂等是正确性要求而不是优化**：一次分析要调 5~7 次大模型（花钱），而且有副作用——会通过 MCP 把岗位记录写进 SQLite。不去重的话，用户手抖点两次就会多一条重复记录。
-
-### Redis 不可用时会自动降级
-
-`POST /analyze` 捕获到 Redis 异常后，直接同步执行一次并返回 **200 + 完整结果**，响应头带 `X-Analysis-Mode: sync-fallback`：
-
-```
-HTTP/1.1 200 OK
-x-analysis-mode: sync-fallback
+```powershell
+$r = Invoke-RestMethod -Uri http://localhost:8000/analyze -Method Post `
+     -ContentType "application/json" -Body '{"jd":"招聘 AI 应用开发实习生，要求 Python 与 RAG 经验"}'
+Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
 ```
 
-降级不是另写一套实现，而是同一个 `run_analysis()` 换个入口。这样"降级路径"永远和"正常路径"保持同样的正确性，不会出现"平时好好的、降级时结果不一样"这种最难查的 bug。
+## 任务队列
+
+- **队列**：Redis Stream + 消费组，任务处理完显式 `XACK`
+- **故障回收**：未确认的消息留在 PEL，闲置超过 2 分钟的任务由其他 worker 用 `XAUTOCLAIM` 认领重做
+- **幂等**：JD 的 SHA-256 指纹 + `SET NX EX`，24 小时有效
+- **限流**：入口每分钟 20 次，命中幂等不消耗配额
+- **降级**：Redis 不可用时同步执行，响应头带 `X-Analysis-Mode: sync-fallback`
+- **退出**：SIGTERM 只置退出标志，当前任务 ACK 后进程才退出
+
+一次分析要跑 50~120 秒，超过网关和浏览器常见的 30~60 秒超时，所以走异步：接口毫秒级返回 `task_id`，客户端轮询结果。
 
 ## MCP 工具
 
 | Server | 工具 | 用途 |
 | --- | --- | --- |
-| Resume MCP | `get_resume` | 获取脱敏候选人资料 |
-| Resume MCP | `search_projects` | 按技术关键词查询项目 |
-| Job MCP | `save_job` | 保存岗位和 JD |
-| Job MCP | `list_jobs` | 按状态列出岗位 |
-| Job MCP | `update_status` | 更新投递状态 |
-| Job MCP | `get_job` | 按 id 查询单个岗位 |
-| Job MCP | `list_jobs_from_company` | 按公司名查询岗位 |
-| Document MCP | `generate_resume_md` | 生成 Markdown 简历要点 |
-| Document MCP | `generate_interview_prep` | 生成面试准备文档 |
+| Resume | `get_resume` | 获取脱敏候选人资料 |
+| Resume | `search_projects` | 按技术关键词查询项目 |
+| Job | `save_job` | 保存岗位与 JD |
+| Job | `list_jobs` | 按状态列出岗位 |
+| Job | `update_status` | 更新投递状态 |
+| Job | `get_job` | 按 id 查询单个岗位 |
+| Job | `list_jobs_from_company` | 按公司名查询岗位 |
+| Document | `generate_resume_md` | 生成 Markdown 简历要点 |
+| Document | `generate_interview_prep` | 生成面试准备文档 |
 
-验证工具发现：
-
-```powershell
-python -m agent.mcp_tools
-```
+工具发现失败时工作流降级为空工具模式，仍能产出基于检索的结果；此时最终消息会说明岗位未保存。
 
 ## 评测
 
-查看 20 个评测用例，不调用模型：
+**端到端（20 例，`eval/results_2026-10-17.json`）**
 
-```powershell
-python -m eval.test_cases --list
-```
+| 指标 | 结果 |
+| --- | --- |
+| 格式通过（Pydantic） | 19/20 |
+| 关键词覆盖 | 19/20 |
+| 引用存在（标注了来源文件） | 19/20 |
+| 引用真实（来源出现在本轮检索结果中） | 19/20 |
+| 明显幻觉风险 | 1/20 |
+| 运行异常 | 1/20 |
 
-运行一个低成本冒烟用例：
+总耗时 1181 秒，单条平均 59 秒（34~128 秒）。
 
-```powershell
-python -m eval.test_cases --limit 1 --output eval/smoke_results.json
-```
+唯一失败的 `real-09` 在第一步就遇到 TLS 连接中断（`SSL: UNEXPECTED_EOF_WHILE_READING`），重试 3 次均为同一网络故障，属于链路未跑完，不是生成质量问题。
 
-运行完整评测：
+**检索（8 条标注 JD，k=4，`eval/recall_results.json`）**
 
-```powershell
-python -m eval.test_cases --output eval/results.json
-```
-
-默认评测会关闭 MCP 工具，避免写入岗位数据库或生成文档。需要验证完整 MCP 链路时显式添加：
-
-```powershell
-python -m eval.test_cases --limit 1 --with-tools --output eval/mcp_smoke_results.json
-```
-
-### 最近一次端到端评测结果（2026-10-17）
-
-完整结果见 [`eval/results_2026-10-17.json`](eval/results_2026-10-17.json)：真实调用模型，默认关闭 MCP 写操作。
-
-| 指标 | 20 例 | 含义 |
-| --- | :---: | --- |
-| 格式通过 | 19/20 | 输出是否符合 Pydantic Schema |
-| 关键词覆盖 | 19/20 | JD 要求的关键技能是否被覆盖 |
-| 引用存在 | 19/20 | 报告是否标注了来源文件 |
-| 引用真实性 | 19/20 | 标注的来源里是否真有这段内容 |
-| 明显幻觉风险 | 1/20 | 越低越好 |
-| 运行异常 | 1/20 | 链路未跑完的用例数 |
-
-20 例总耗时 **19.7 分钟**，单条平均 59 秒（34s ~ 128s）。
-
-**唯一失败的 `real-09` 与生成质量无关**：它在第一步就撞上 `[SSL: UNEXPECTED_EOF_WHILE_READING]`——上游 TLS 连接被意外掐断，重试 3 次都是同一个网络故障。它耗时 51 秒、`error` 字段为空、报告文本为空，正是"链路没跑完"而非"跑完了但内容不对"的特征。
-
-这一轮是把知识库从 10 个片段扩充到 29 个之后重跑的，**产出质量没有下降**，说明检索库的扩充是安全的。
-
-#### 三轮演进
-
-三轮迭代的通过率、运行异常与耗时变化，以及 10-16 那两处关键改动（分层超时、消除 agent 空转）的细节，记录在 [docs/EVOLUTION.md](docs/EVOLUTION.md)。这里只保留结论：**通过率 17/20 → 20/20 → 19/20，总耗时 54.3 分钟 → 21.8 分钟 → 19.7 分钟**。
-
----
-
-### 检索质量评测 Recall@k（2026-10-17 新增）
-
-端到端评测只能证明"最终产出能用"，证明不了"检索这一环牢不牢"。所以另建了一套检索指标。
-
-```powershell
-python -m eval.recall                 # 三种策略对比
-python -m eval.recall --no-agentic    # 只跑基础检索，不调模型
-```
-
-**标注集** [`eval/retrieval_golden.json`](eval/retrieval_golden.json)：8 条真实岗位（均附来源 URL），人工标注"这份 JD 应该召回哪些片段"。其中 2 条是**低匹配对照组**（Java 技术栈的 Agent 岗、纯数据分析岗）——对照组存在的意义是验证指标有区分度，否则每个岗位都高召回，指标就是自欺。
-
-| 指标 | 基础检索（k=4） |
-| --- | :---: |
+| 指标 | 基础检索 |
+| --- | --- |
 | Recall@1 | 0.143 |
 | Recall@2 | 0.304 |
-| **Recall@4** | **0.464** |
+| Recall@4 | 0.464 |
 | Precision@4 | 0.656 |
 | MRR | 0.875 |
 | 高匹配岗位 Recall@4 | 0.508 |
 | 低匹配岗位 Recall@4 | 0.333 |
 
-**为什么知识库必须先扩到 29 个片段**：最初只有 10 个片段，`k=4` 等于取走全库 40%，Recall 会虚高且改了策略也看不出差异。扩到 29 个之后 `k=4` 只占 14%，指标才有区分度。
+标注集含 2 条低匹配对照岗位，用于验证指标有区分度。
 
-#### 这一套指标挖出的三个问题（比数字本身更有价值）
+这组指标暴露出三个问题：
 
-1. **"查询改写"功能从来没有被触发过。** 默认参数 `max_distance=1.02` 过于宽松，8 条岗位第一轮全部被判为"高相关 ≥2 条"，改写分支一次都没进去——agentic 与 plain 的结果完全相同。它是一个写了但从未生效的功能。
-2. **距离分数的绝对值不能用来判断相关性。** 各岗位第一轮 top-4 的分数都落在 0.61~0.93，但 Recall 从 0.14 到 0.67 天差地别。不同查询的 L2 距离分布不同，绝对值没有可比性，所以 `max_distance` 这个阈值设计从根上就有问题。
-3. **强制改写证明：功能有用，但必须条件触发。** 把 `min_hits` 设成 99 逼它改写后，平均 Recall@4 从 0.464 升到 0.506、Precision@4 从 0.656 升到 0.688。但逐条看规律是：**原本差的（0.14/0.33）全部上升，原本好的（0.57/0.67）反而下降**。改写只在第一轮确实不行时才该触发。
+1. **查询改写从未触发**：默认 `max_distance=1.02` 过松，8 条岗位第一轮全部被判为"高相关 ≥2 条"，改写分支一次都没进入，agentic 与 plain 结果完全相同。
+2. **距离分数的绝对值不可用**：各岗位 top-4 分数都在 0.61~0.93，但 Recall 从 0.14 到 0.67，因为不同查询的 L2 距离分布不同。
+3. **强制改写（`min_hits=99`）后平均 Recall@4 升到 0.506、Precision@4 升到 0.688**，但逐条看：原本差的上升，原本好的下降。改写只在第一轮确实不命中时才有收益。
 
-下一步计划用"召回片段命中了多少 JD 核心技能词"替代分数阈值来判断是否改写——它可计算、不依赖绝对值，且与项目已有的关键词覆盖评测是同一套思路。
+## 目录结构
 
-这些指标检查结构、关键词和来源一致性，不等同于人工评价的回答质量。模型配置、Prompt、Schema 或知识库变更后应重新运行评测。下一步会增加人工标注相关片段、Recall@k、重复运行稳定性、延迟和调用成本。
+```text
+careerpilot/
+├── agent/                 # LangGraph 状态、节点、Schema、模型与 MCP 适配
+├── api/                   # FastAPI 入口与接口契约
+├── tasks/                 # 队列、worker、共享执行入口
+├── knowledge/             # 索引构建与检索（docs/ 为脱敏示例资料）
+├── mcp_servers/           # resume / job / document 三个 MCP Server
+├── eval/                  # 20 例评测集、检索标注集与结果
+├── scripts/               # 图结构、MCP、分数分布等调试脚本
+├── tests/                 # 离线单元测试
+├── docs/                  # 迭代记录
+├── run.py                 # 命令行入口
+└── mcp.json               # MCP Server 配置
+```
 
-## 离线测试与 CI
-
-数据库、文档生成和 MCP 返回值规范化测试不需要模型 API Key：
+## 测试
 
 ```powershell
 python -m unittest discover -s tests -v
+python -m compileall -q agent api tasks knowledge mcp_servers eval
 ```
 
-`.github/workflows/ci.yml` 会在推送到 `main` 或创建 Pull Request 时自动安装依赖、运行离线测试并编译项目源码。需要真实模型的评测不会在公共 CI 中自动执行，避免泄露密钥和产生调用费用。
+`.github/workflows/ci.yml` 在推送与 PR 时执行上面两步，不调用模型、不需要 Key。需要真实模型的评测手动运行：
 
-## 可观测性和容错
-
-- 节点级：开始、完成、异常和耗时。
-- 模型级：调用次数、重试次数和耗时。
-- MCP 级：工具名、参数摘要、成功或失败状态。
-- RAG 级：查询、来源、距离分数和内容摘要。
-- MCP 工具发现失败时，工作流可降级到无工具模式；最终消息会如实说明岗位未保存。
-- 分层超时：按节点输出长度给不同的读超时（JD 分析 60s、Agent 决策 90s、简历要点 120s、面试题 150s、匹配报告 180s）。一次分析要打 5~7 次模型请求，而超时限制的是**单次请求**；所有节点共用同一阈值时，要么误杀长文本节点，要么让短节点白白久等。
-- 重试策略：区分「上游故障（429/超时/5xx）」与「输出不合规」，前者完整指数退避加抖动，后者只短等快速重试；客户端层关闭重试，避免与业务层相乘成 3×3=9 次请求。
-- 避免 agent 收尾空转：工具轮次用完后不再回 agent。经典 ReAct 循环里模型最后一次被调用时要"收尾"，会再生成一段几百字的自然语言总结（实测 21~58 秒、外加一份 token），而本项目交付的是结构化字段，这段总结没有任何消费者。现在改为轮次达上限就直接进生成阶段，同时给 agent 注入 system 指令，要求"信息足够时只输出 finish"。
-
-## 隐私与安全
-
-- 只提交脱敏示例资料，不提交真实简历、手机号或私人课程记录。
-- 只加载自己构建和信任的 FAISS 索引。当前 LangChain 加载路径允许反序列化本地索引，不应接收陌生人提供的索引文件。
-- 如果 API Key 曾被提交，即使随后删除文件，也必须立即撤销并重新生成密钥。
-- 生成文件和岗位数据库默认仅保存在本地。
+```powershell
+python -m eval.test_cases --output eval/results.json
+python -m eval.recall
+```
 
 ## 已知限制
 
-- 当前没有 Web 界面，主要通过命令行演示。
-- MCP Server 使用本地 stdio，不是远程服务。
-- Resume MCP 使用脱敏演示资料，正式使用需要替换为个人资料读取逻辑。
-- 评测规模较小，且默认不启用真实 MCP 工具。
-- 相似度阈值与知识库、Embedding 模型相关，迁移数据后应重新校准。
+- 没有 Web 界面，通过命令行或 HTTP 接口使用
+- MCP Server 是本地 stdio 子进程，不是远程服务
+- 评测规模小，默认不启用真实 MCP 写操作
+- 相似度阈值与知识库、Embedding 模型相关，换数据后需要重新校准
+- 幂等只在提交入口生效，`save_job` 没有唯一约束：worker 在写库后、ACK 前崩溃时，重做会插入重复记录
 
+## 隐私
+
+仓库只包含脱敏示例资料，不含真实简历、手机号与私人记录。`.env` 在 `.gitignore` 与 `.dockerignore` 中，不会进入提交或镜像。

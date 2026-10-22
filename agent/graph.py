@@ -255,16 +255,9 @@ def safe_invoke(
 
     raise RuntimeError(f"{operation_name} 调用多次失败") from last_error
 
-# ---------- 分节点读超时 ----------
-# 为什么不能所有节点共用一个超时：
-#   一次 /analyze 要打 8~9 次模型请求，超时限制的是【单次请求】而不是整条链路，
-#   任意一次超时、重试三次仍失败，整条用例就判失败。
-#   而各节点要生成的长度差一个量级（2026-10-15 端到端实测）：
-#       analysis 一小段 JSON ≈7s / agent 工具决策 7~25s
-#       resume_bullets ≈17s / interview_questions ≈28s / report 长文 ≈37s
-#   全用 60s 时，20 例评测挂了 3 例，耗时精确落在 205~206s（=3×60s+三次退避），
-#   说明是阈值太小而不是生成质量问题。
-# 策略：短输出节点用小阈值（卡住就早失败、早重试），长文本节点给足时间（别误杀正常请求）。
+# 分节点读超时：一次分析要打 5~7 次模型请求，超时限制的是单次请求；
+# 各节点输出长度差一个量级（实测 analysis ≈7s、questions ≈28s、report ≈37s），
+# 共用同一阈值会误杀长文本节点。
 TIMEOUT_ANALYSIS = 60.0
 TIMEOUT_AGENT = 90.0
 TIMEOUT_BULLETS = 120.0

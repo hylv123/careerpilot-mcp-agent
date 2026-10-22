@@ -3,7 +3,7 @@
 运行方式（在 careerpilot 目录下）：
     .venv\\Scripts\\python.exe mcp_servers\\test_resume_client.py
 
-验收标准：能连上并列出 get_resume、search_projects 两个工具。
+预期结果：能连上，并列出 get_resume、search_projects 两个工具，再各调用一次验证参数与返回值。
 （参照 MCP 官方教程第 20 章的 McpClient 思路：stdio_client + ClientSession）
 """
 
@@ -38,7 +38,7 @@ async def main() -> int:
                 return 1
             print("[OK] get_resume、search_projects 均已列出")
 
-            #验证 get_resume 能真正被调用（验收只要求列出，这一步是加分项）
+            # 工具被列出来只说明注册成功；再真正调用一次，才能验证参数与返回值是否可用
             result = await session.call_tool("get_resume", {})
             text = getattr(result.content[0], "text", str(result.content[0]))
             print("get_resume() 调用结果:", text)

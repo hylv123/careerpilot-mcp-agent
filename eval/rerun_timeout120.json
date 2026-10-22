@@ -1,0 +1,383 @@
+{
+  "summary": {
+    "total": 3,
+    "format_passed": 3,
+    "skill_coverage_passed": 3,
+    "citation_passed": 3,
+    "citation_truth_passed": 3,
+    "hallucination_risk_count": 0,
+    "runtime_error_count": 0,
+    "elapsed_seconds": 503.639,
+    "with_tools": false
+  },
+  "results": [
+    {
+      "id": "real-01",
+      "kind": "real",
+      "source_title": "AI & Technical Program Management Intern - AI Fund",
+      "source_url": "https://jobs.lever.co/AIFund/66bd2284-3a9b-4c58-bae1-efc78638ec64",
+      "source_case": null,
+      "jd": "AI Fund 招聘 AI 与技术项目管理实习生，要求理解 LLM、RAG 和 Agent 的应用，能够使用 Python 编写基础脚本，并接触过 LangChain 等生成式 AI 工具。",
+      "expect_skills": [
+        "Python",
+        "RAG",
+        "LangChain"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "课程笔记.md",
+        "项目经历.md"
+      ],
+      "generated_sources": [
+        "项目经历.md",
+        "项目经历.md",
+        "课程笔记.md",
+        "项目经历.md",
+        "项目经历.md",
+        "课程笔记.md",
+        "项目经历.md",
+        "项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "AI 与技术项目管理实习生",
+        "company": "AI Fund",
+        "requirements": [
+          "理解 LLM、RAG 和 Agent 的应用",
+          "能够使用 Python 编写基础脚本",
+          "接触过 LangChain 等生成式 AI 工具"
+        ],
+        "keywords": [
+          "AI Fund",
+          "AI 与技术项目管理",
+          "实习生",
+          "LLM",
+          "RAG",
+          "Agent",
+          "Python",
+          "LangChain",
+          "生成式 AI"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 Python 编写 build_index.py 与 retrieve.py，完成知识库文档切块、text-embedding-v3 向量化与 FAISS 索引构建，保证检索返回带来源的真实片段，并提供 20 例离线评测与 Pydantic 结构化输出校验以验证可靠性。",
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "bullet": "参与开发 CareerPilot MCP Agent（实习求职助手），使用 LangGraph（LangChain 生态）编排岗位分析、经历检索、工具路由与匹配报告等工作流节点，并接入 3 个 stdio MCP Server（简历查询/投递记录/文档生成），掌握 Agent 工具调用机制。",
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "bullet": "基于课程笔记实现最小 RAG 问答工具，完整跑通「加载文档 → 300–500 字切块 → embedding → 相似度检索 → 片段注入提示词作答」流程，并掌握 Agentic RAG 查询改写、补充检索去重等生成式 AI 应用要点。",
+          "evidence_source": "课程笔记.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "请介绍你实现的课程作业 RAG 问答小工具：从文档加载到最终生成的完整链路是怎样的？切块策略和检索方式你分别是怎么考虑的？",
+          "answer_points": [
+            "简述 RAG 流程：加载课程 PDF/Markdown → 按中文 300–500 字切块 → 用 text-embedding-v3 做 embedding → 向量相似度检索 → 将命中片段拼进提示词让模型作答",
+            "说明切块长度选择的原因（兼顾语义完整与检索粒度）以及为何选择向量检索",
+            "强调检索结果必须带有来源，回答能指向 docs 里的原文，体现对可溯源性的理解",
+            "结合 AI Fund 岗位：说明已掌握 RAG 核心链路，能用 Python 独立实现最小可用版本"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "CareerPilot Agent 里你用 LangGraph 设计了哪些节点与数据流？MCP 工具与 Agent 是如何拆分的，这种架构解决了什么问题？",
+          "answer_points": [
+            "介绍 LangGraph 串联的节点：岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题、岗位保存",
+            "说明接入的 3 个 stdio MCP Server（resume / job / document）各自职责：经历查询、投递记录、文档生成，Agent 按协议调用而非把逻辑写死在一个脚本",
+            "说明知识层用 FAISS 本地向量库支撑检索，以及嵌入模型 DashScope text-embedding-v3 的选择",
+            "体现对 Agent 编排、工具解耦的设计思维，与岗位要求的 LangChain/生成式 AI 工具经验直接对应"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "你在笔记中提到 Agentic RAG 会在首轮结果不足时改写查询并补充检索。请讲讲触发条件、实现思路，以及它与单轮 RAG 相比的价值在哪里？",
+          "answer_points": [
+            "解释 Agentic RAG 与普通 RAG 的区别：第一轮高相关结果不足时对查询进行改写，再做补充检索并对结果去重",
+            "举例说明什么场景下会触发二次检索（如查询表述过宽/模糊、首轮召回不足）",
+            "说明这种迭代式检索如何提升回答可靠性与覆盖面，以及如何保证补充结果仍可溯源到原文",
+            "体现对 LLM + RAG + Agent 组合应用的深入理解，贴合岗位要求的核心技能"
+          ],
+          "evidence_source": "课程笔记.md"
+        },
+        {
+          "question": "你如何保证 RAG 回答真实可溯源、不会幻觉？你在 CareerPilot 中做了哪些评测与日志机制来验证检索和生成质量？",
+          "answer_points": [
+            "说明实现 build_index.py 与 retrieve.py 的要点：保证检索返回的是带来源的真实片段，而不是模型编造",
+            "介绍可靠性手段：Pydantic 约束结构化输出、记录节点/模型/工具/RAG 日志、提供 20 例离线评测",
+            "解释离线评测用例覆盖哪些场景（如“我有哪些项目经历”类提问应召回对应文档），以及测试结果如何驱动改进",
+            "展现工程质量意识，与 AI Fund 技术项目管理中对可验证交付的要求匹配"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "CareerPilot 涉及知识库切块、Agent 编排、多个 MCP 工具与评测等多个并行任务。你当时如何拆解任务、管理依赖并确保整体按期交付？",
+          "answer_points": [
+            "以管理知识库文档（简历、项目经历、课程笔记）为起点，说明如何做内容拆解与版本管理，保证各模块依赖清晰",
+            "说明将查简历/记投递/写文档拆成独立 MCP 服务，便于并行开发、独立测试与后续扩展，体现技术任务拆解与排期能力",
+            "结合个人职责（整理文档、实现检索脚本、跟进整体工作流）说明跨模块协调、进度跟踪与风险识别（如 API 依赖、评测不通过）的实践",
+            "呼应 AI Fund“AI 与技术项目管理”实习生定位：既能写 Python 脚本，也能组织多任务从知识层到工具层按期落地"
+          ],
+          "evidence_source": "项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 156.84
+    },
+    {
+      "id": "variant-05",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-05",
+      "jd": "将校园业务表格中的重复记录合并，按类别整理数据，并通过命令行脚本输出清单。",
+      "expect_skills": [
+        "表格",
+        "去重",
+        "脚本"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "课程笔记.md",
+        "项目经历.md"
+      ],
+      "generated_sources": [
+        "项目经历.md",
+        "课程笔记.md",
+        "项目经历.md",
+        "课程笔记.md",
+        "项目经历.md",
+        "项目经历.md",
+        "项目经历.md",
+        "课程笔记.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "表格数据处理",
+          "重复记录去重与合并",
+          "按类别整理数据",
+          "命令行脚本编写与执行"
+        ],
+        "keywords": [
+          "AI Agent",
+          "数据清洗",
+          "去重合并",
+          "命令行脚本",
+          "表格处理",
+          "数据整理"
+        ],
+        "level": "初级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 Python 编写并执行 build_index.py 与 retrieve.py 命令行脚本，实现知识库文档的加载、切块、向量化与检索全流程，通过脚本化命令完成数据整理与处理任务",
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "bullet": "在 Agentic RAG 检索流程中实现查询改写与结果去重合并：第一轮高相关结果不足时改写查询并补充检索，再对重复片段去重后合并，提升数据清洗与关键信息召回质量",
+          "evidence_source": "课程笔记.md"
+        },
+        {
+          "bullet": "使用 FAISS 与 SQLite 对向量片段及元数据按类别（简历、项目经历、课程笔记）存储和管理，配合 Pydantic 约束结构化输出，保证表格类数据整理结果规范可靠",
+          "evidence_source": "项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "岗位要求做重复记录的去重与合并。你在 Agentic RAG 中做过“补充检索和结果去重”，请具体讲讲：你如何判断两条记录是否重复？去重后合并时保留哪些信息？这套思路如何迁移到表格数据（如候选人记录）的去重合并上？",
+          "answer_points": [
+            "引用 Agentic RAG 中“第一轮高相关结果不足时改写查询，并进行补充检索和结果去重”的实践，说明去重不是简单删行，而是要先确定重复判定依据",
+            "说明去重判断维度：embedding 相似度/文本重合度 + 唯一标识（如来源路径、文档 ID、姓名+岗位等联合键），并说明阈值或规则如何定",
+            "说明合并策略：保留质量更高的记录（如来源完整、信息更全），把补充字段合并，并保留可追溯来源",
+            "迁移到表格场景：去重前先做归一化（去空格、统一大小写与日期格式），再按唯一键去重合并，避免误删有效记录"
+          ],
+          "evidence_source": "课程笔记.md"
+        },
+        {
+          "question": "岗位要求会编写和执行命令行脚本。你负责实现的 build_index.py 和 retrieve.py 是典型的命令行脚本，请介绍：这两个脚本各自完成什么任务？参数如何设计？在命令行中是如何执行和调试的？",
+          "answer_points": [
+            "说明 build_index.py 的职责：加载文档 → 按中文 300–500 字切块 → 调用 text-embedding-v3 向量化 → 写入本地 FAISS，输入输出以文件路径/参数形式控制",
+            "说明 retrieve.py 的职责：命令行接收查询词，做相似度检索并返回带来源（docs/ 原文）的真实片段，而不是让模型凭空生成",
+            "脚本工程细节：明确的入口函数、参数解析（如输入文件、切块大小、top-k）、异常处理、以及用 Loguru 记录执行日志便于排错",
+            "强调命令行执行与验证方式：离线评测/样例查询验证脚本输出是否正确，体现可维护与可复现"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "岗位要求做表格数据处理与按类别整理数据。你的知识库把文档按简历.md、项目经历.md、课程笔记.md 分类管理并向量化，请讲讲这种“按类别整理”的思路，以及如何把它应用到按类别整理结构化表格数据？",
+          "answer_points": [
+            "说明知识层的分类组织方式：不同类别的文档分别切块、向量化写入 FAISS，提问时按类别召回对应内容",
+            "说明类别划分的价值：检索更精准、来源可追溯，方便后续按类别维护与更新",
+            "迁移到表格数据：先定义类别维度（如部门、状态、项目类型），再按类别分组清洗、去重、汇总，输出分类清单",
+            "结合工具层实践：把“查简历/记投递/写文档”做成独立工具并落盘，体现数据按用途与类别归档的组织习惯"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "你做过课程 PDF 与 Markdown 笔记的 RAG 问答小工具，涉及加载、切块、向量化、检索等数据处理流程。请以这个项目为例，讲讲你处理数据（含表格类数据）时的完整清洗与整理流程，以及如何保证处理后的数据可用、可查？",
+          "answer_points": [
+            "复述项目处理链路：加载文档 → 按中文 300–500 字切块 → embedding → 相似度检索 → 把片段塞进提示词让模型作答",
+            "说明切块参数（300–500 字）的取舍：兼顾语义完整与检索精度，避免过长丢失重点、过短上下文不足",
+            "说明可靠性保证：用 Pydantic 约束结构化输出、记录节点/模型/工具和 RAG 日志、提供 20 例离线评测来验证数据链路正确性",
+            "迁移到表格数据：先做格式统一、缺失值与脏数据清洗，再结构化入库（如 SQLite）并建立索引，保证可查询"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "岗位是 AI Agent 应用方向，同时要求命令行脚本与数据处理能力。你在实践中把「查简历 / 记投递 / 写文档」封装成独立工具让 Agent 按协议调用。请谈谈：为什么要把数据处理逻辑工具化而不是写死在一个脚本里？你如何设计这类工具的输入输出以便 Agent 正确调用？",
+          "answer_points": [
+            "说明工具化的动机：把查简历/记投递/写文档做成 MCP 独立工具，Agent 按协议调用，职责清晰、可复用、易扩展，避免逻辑全部耦合在一个脚本中",
+            "说明工具协议设计：输入输出需结构化可解析（数据落 SQLite、文档按类别生成），并接入 3 个 stdio MCP Server（resume / job / document）",
+            "说明结构化约束：使用 Pydantic 约束输出格式，保证工具返回的记录/表格能被 Agent 稳定解析，减少幻觉与格式错误",
+            "呼应岗位需求：未来可将数据清洗、去重合并、表格处理同样封装为工具，供 Agent 在命令行环境中调度执行"
+          ],
+          "evidence_source": "课程笔记.md"
+        }
+      ],
+      "elapsed_seconds": 146.722
+    },
+    {
+      "id": "variant-06",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-06",
+      "jd": "研究文字内容的数值化表示，使含义相近的句子在表示空间中距离更近，并验证匹配效果。",
+      "expect_skills": [
+        "文本",
+        "向量",
+        "相似"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "简历.md",
+        "课程笔记.md",
+        "项目经历.md"
+      ],
+      "generated_sources": [
+        "课程笔记.md",
+        "项目经历.md",
+        "项目经历.md",
+        "课程笔记.md",
+        "项目经历.md",
+        "项目经历.md",
+        "项目经历.md",
+        "简历.md"
+      ],
+      "analysis": {
+        "job_title": "NLP算法工程师（文本表示方向）",
+        "company": "未识别公司",
+        "requirements": [
+          "文本数值化表示/文本嵌入",
+          "句向量与表示学习",
+          "语义相似度计算",
+          "句子匹配算法",
+          "向量空间距离度量",
+          "匹配效果验证与评估",
+          "机器学习/深度学习基础",
+          "NLP基础知识"
+        ],
+        "keywords": [
+          "文本表示",
+          "句向量",
+          "语义相似度",
+          "语义匹配",
+          "表示学习",
+          "文本嵌入",
+          "NLP"
+        ],
+        "level": "中级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "掌握文本嵌入（embedding）与文本数值化表示原理，理解文本映射到向量空间后语义相近的文本距离更近，并实践应用阿里云百炼 text-embedding-v3 模型完成文本向量化表示。",
+          "evidence_source": "课程笔记.md"
+        },
+        {
+          "bullet": "独立实现 build_index.py 与 retrieve.py，完成课程文档按中文 300–500 字切块、embedding 向量化与相似度检索，保证检索返回带来源的真实片段，覆盖文本表示到语义匹配的完整流程。",
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "bullet": "实践向量空间语义匹配效果验证与调优，通过对比切块策略确认过短丢上下文、过长引入噪声，并将 chunk_size=300、chunk_overlap=50 的参数方案应用到 CareerPilot 检索系统中。",
+          "evidence_source": "项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在课程笔记中记录了「embedding 是把文本映射到向量空间，相近语义距离更近」，并实际使用了阿里云百炼 text-embedding-v3。请结合你的实践，谈谈你对文本嵌入/文本数值化表示的理解：为什么语义相近的文本在向量空间中距离更近？这对文本表示学习意味着什么？",
+          "answer_points": [
+            "解释 embedding 的本质：将离散、非结构化的文本映射为稠密连续向量，语义相近的文本在向量空间中距离更近",
+            "说明 text-embedding-v3 属于预训练表示学习模型，是句向量/文本嵌入的一种成熟实现，无需从零训练即可获得高质量文本表示",
+            "联系到文本数值化表示是 NLP 任务的基础：检索、匹配、分类等下游任务都依赖向量表示的质量",
+            "可补充对 embedding 维度、向量归一化等细节的理解，以及它们对后续相似度计算与存储开销的影响"
+          ],
+          "evidence_source": "课程笔记.md"
+        },
+        {
+          "question": "在你的 RAG 项目中，检索环节需要计算 query 与文档片段的相似度。请详细说明你是如何实现语义相似度计算与向量空间距离度量的？为什么选择这种度量方式？",
+          "answer_points": [
+            "说明 build_index.py 将文档切块后生成 embedding 向量并建立索引，retrieve.py 负责计算 query 向量与候选向量的相似度",
+            "介绍使用的距离度量方式（如余弦相似度、内积、欧氏距离），并解释余弦相似度关注向量方向而非模长，更适合文本语义比较",
+            "结合向量空间距离度量的取舍：不同度量对向量归一化、检索排序结果的影响",
+            "说明检索结果需返回带来源的真实片段，保证相似度匹配结果可追溯、可验证"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "你提到「切块过短会丢上下文、过长会引入噪声」，并总结出中文场景 overlap 约 50 字较稳。请谈谈文本切块策略如何影响句向量/文本表示的质量？你是如何确定 chunk_size=300、chunk_overlap=50 的？",
+          "answer_points": [
+            "分析切块长度对表示质量的影响：过短导致语义上下文缺失，向量表示不完整；过长引入无关噪声，稀释核心语义、降低相似度区分度",
+            "说明 overlap 的作用是保持跨块语义连贯，避免关键信息被切断在边界处",
+            "解释参数确定过程：基于中文语言特点与实验观察，300 字左右能承载较完整语义，50 字 overlap 在连贯性与去重成本间取得平衡",
+            "强调该经验直接复用到 CareerPilot 的 RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50) 配置中，体现可迁移性"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "你的职责之一是「保证检索可返回带来源的真实片段」。请问你是如何验证和评估检索/匹配效果的？在语义匹配任务中你会采用哪些评估方法或指标？",
+          "answer_points": [
+            "说明验证思路：检查检索结果是否命中知识库 docs/ 中的真实原文片段，确保匹配结果有据可查、可溯源",
+            "介绍可用的评估手段：人工抽检相关性、top-k 命中率、精确率/召回率、MRR 等排序类指标",
+            "结合 Agentic RAG 经验：当第一轮高相关结果不足时改写查询并补充检索、结果去重，说明如何迭代提升匹配效果",
+            "强调评估应覆盖「相关性」与「可验证性」两个维度，避免只追求相似度分数而忽略结果真实性"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "你目前使用的是现成的 text-embedding-v3 模型，同时简历中技术栈包含 FAISS、LangChain。请谈谈你对表示学习的理解：为什么选择预训练 embedding 模型而不是自己训练？如果要针对简历/招聘这类特定领域优化句向量，你会怎么做？",
+          "answer_points": [
+            "说明选择预训练 embedding 模型的原因：已在大规模语料上学到通用语义表示，效果好、成本低、开箱即用",
+            "阐述对表示学习的理解：本质是让模型学到能反映语义关系的向量表征，向量质量直接决定下游相似度匹配的上限",
+            "提出领域优化思路：在通用模型基础上做领域微调（fine-tune）、对比学习或构造领域正负样本对进行训练",
+            "结合简历中的工程能力（Python、LangChain、FAISS、SQLite）说明从文本嵌入到向量检索完整链路的落地能力"
+          ],
+          "evidence_source": "简历.md"
+        }
+      ],
+      "elapsed_seconds": 200.067
+    }
+  ]
+}

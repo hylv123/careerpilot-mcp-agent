@@ -1,0 +1,138 @@
+{
+  "summary": {
+    "total": 1,
+    "format_passed": 1,
+    "skill_coverage_passed": 1,
+    "citation_passed": 1,
+    "citation_truth_passed": 1,
+    "hallucination_risk_count": 0,
+    "runtime_error_count": 0,
+    "elapsed_seconds": 132.72,
+    "with_tools": false
+  },
+  "results": [
+    {
+      "id": "real-01",
+      "kind": "real",
+      "source_title": "AI & Technical Program Management Intern - AI Fund",
+      "source_url": "https://jobs.lever.co/AIFund/66bd2284-3a9b-4c58-bae1-efc78638ec64",
+      "source_case": null,
+      "jd": "AI Fund 招聘 AI 与技术项目管理实习生，要求理解 LLM、RAG 和 Agent 的应用，能够使用 Python 编写基础脚本，并接触过 LangChain 等生成式 AI 工具。",
+      "expect_skills": [
+        "Python",
+        "RAG",
+        "LangChain"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md"
+      ],
+      "analysis": {
+        "job_title": "AI 与技术项目管理实习生",
+        "company": "未识别公司",
+        "requirements": [
+          "理解 LLM 应用",
+          "理解 RAG 应用",
+          "理解 Agent 应用",
+          "使用 Python 编写基础脚本",
+          "接触过 LangChain 等生成式 AI 工具"
+        ],
+        "keywords": [
+          "AI Agent",
+          "LLM",
+          "RAG",
+          "LangChain",
+          "Python",
+          "技术项目管理",
+          "生成式 AI",
+          "实习生"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 Python 与 LangChain 独立开发 RAG 问答工具：完成文档加载、中文 300–500 字切块、embedding 向量化、相似度检索及提示词注入，输出可带来源引用的回答，具备 LLM 与 RAG 应用的基础落地能力。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "参与构建基于 LangGraph 的 Agentic RAG 项目：串联岗位分析、经历检索、工具路由与报告生成，接入 3 个 stdio MCP Server 管理简历/投递/文档，使用 Pydantic 约束结构化输出并编写 20 例离线评测，体现对 AI Agent、工具调用及生成式 AI 工程化的理解。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "系统整理 RAG 与 Agent 要点：掌握先检索再生成、第一轮高相关结果不足时改写查询并补充检索与去重、以及通过 MCP 协议封装独立工具供 Agent 调用等设计方法。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你的课程作业里实现了一个最小 RAG 问答小工具，请描述它的完整工作流程，并说明你如何保证检索结果能追溯到原文、避免模型幻觉？",
+          "answer_points": [
+            "先讲清整体链路：加载文档 → 按中文 300–500 字切块 → embedding → 相似度检索 → 把召回片段拼进提示词让模型作答",
+            "说明切块策略的选择原因（中文语义边界、控制 token 成本与检索粒度），以及 embedding 模型使用阿里云百炼 text-embedding-v3",
+            "强调可靠性设计：检索必须返回带来源的真实片段，回答要能指向 docs/ 里的原文，防止模型凭空编造",
+            "可以补充遇到的具体问题，例如召回不足时如何优化切块或检索方式，体现工程思维"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的 CareerPilot 项目用 LangGraph 串联多个环节并接入了 MCP Server，请讲讲 Agent 层的整体设计思路，以及你如何理解 Agent 与普通脚本的本质区别？",
+          "answer_points": [
+            "先讲分层架构：知识层（简历/项目/笔记切块向量化写入 FAISS）→ Agent 层（LangGraph 串联岗位分析、经历检索、工具路由、匹配报告等节点）→ 工具层（3 个 stdio MCP Server）",
+            "说明为什么用 LangGraph 而不是单一脚本：状态化编排、节点可复用、便于路由和扩展",
+            "解释 MCP 的价值：把「查简历 / 记投递 / 写文档」做成独立工具按协议调用，职责分离、可复用，而不是把逻辑写死在一个脚本里",
+            "可补充 Agentic RAG 的进阶设计：第一轮高相关结果不足时改写查询并补充检索、结果去重"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "项目中你用 Python 实现了 build_index.py 和 retrieve.py，请谈谈这两个脚本的核心实现逻辑，以及你在写脚本时如何保证代码的可维护性和可调试性？",
+          "answer_points": [
+            "说明技术栈：Python、LangChain、LangGraph、FastMCP、FAISS、SQLite、Loguru，突出自己对生成式 AI 工具链的动手实践",
+            "具体讲 build_index.py 的实现：读取 markdown 文档、切块、调用 DashScope text-embedding-v3 向量化、写入本地 FAISS",
+            "具体讲 retrieve.py 的实现：相似度检索逻辑、返回带来源的真实片段，API Key 通过 .env 管理（aliQwen-api）",
+            "体现编码规范：用 Pydantic 约束结构化输出、记录节点/模型/工具/RAG 日志，说明写脚本不只是跑通功能还考虑可维护性"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你提到项目中使用 Pydantic 约束结构化输出、记录各类日志，并提供了 20 例离线评测。请讲讲你是如何评测 Agent 质量的，以及你如何理解 LLM 应用中的可靠性问题？",
+          "answer_points": [
+            "先讲清楚如何做评测：构建了 20 例离线评测集，覆盖不同类型提问（如「我有哪些项目经历」）来验证召回与回答质量",
+            "说明用 Pydantic 约束结构化输出的作用：保证 Agent 输出格式稳定、可解析，降低 LLM 输出不稳定的影响",
+            "说明日志体系：记录节点、模型、工具和 RAG 调用日志，便于定位问题链路，这是技术项目管理中可观测性的体现",
+            "总结对 LLM 应用可靠性的理解：LLM 输出天然不确定，需要通过检索增强、结构化约束、评测与日志来兜底"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "请分别谈谈你对 RAG、Agentic RAG 和 MCP 的理解，并说明为什么在 Agent 设计中用 MCP 协议封装工具比把逻辑写死在一个脚本里更好？",
+          "answer_points": [
+            "用自己的话讲清 RAG：先检索再生成，把外部知识（docs/ 原文）注入提示词，回答要能指向原文来源，解决模型知识过期与幻觉问题",
+            "讲清 Agentic RAG：第一轮高相关结果不足时改写查询、进行补充检索和结果去重，说明 RAG 不只是一次性检索而是可以迭代优化",
+            "讲清 MCP：把「查简历 / 记投递 / 写文档」做成独立工具，Agent 按协议调用，说明工具标准化对 Agent 可扩展性的意义",
+            "结合 embedding 基础：文本映射到向量空间、相近语义距离更近，这是检索相似度的底层原理，体现对 LLM/RAG/Agent 概念的系统理解"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "elapsed_seconds": 132.72
+    }
+  ]
+}

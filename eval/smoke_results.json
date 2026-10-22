@@ -1,0 +1,133 @@
+{
+  "summary": {
+    "total": 1,
+    "format_passed": 1,
+    "skill_coverage_passed": 1,
+    "citation_passed": 1,
+    "citation_truth_passed": 1,
+    "hallucination_risk_count": 0,
+    "runtime_error_count": 0,
+    "elapsed_seconds": 37.851,
+    "with_tools": false
+  },
+  "results": [
+    {
+      "id": "real-01",
+      "kind": "real",
+      "jd": "招聘AI应用开发实习生，负责大模型应用与RAG知识库开发，要求熟悉Python、LangChain和向量检索。",
+      "expect_skills": [
+        "Python",
+        "RAG",
+        "LangChain"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "requirements": [
+          "熟悉Python编程",
+          "掌握LangChain框架",
+          "了解向量检索技术",
+          "具备大模型应用开发经验",
+          "熟悉RAG知识库开发"
+        ],
+        "keywords": [
+          "AI应用开发",
+          "RAG",
+          "LangChain",
+          "Python",
+          "向量检索",
+          "大模型",
+          "知识库"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "独立实现课程作业 RAG 问答小工具，完成文档加载、中文 300–500 字切块、embedding 向量化、相似度检索并将检索片段注入提示词供大模型作答，具备完整的 RAG 知识库开发经验。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "基于 Python 3.10 与 LangChain/LangGraph 搭建知识层与 Agent 层，使用 DashScope text-embedding-v3 对文档向量化并写入本地 FAISS 向量库，实现带来源的相似度检索与召回。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "熟练使用 Python 与 LangChain/LangGraph 框架，掌握 FAISS 本地向量库、文本切块与相似度检索技术，具备大模型应用与 RAG 开发所需的工程能力。",
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在课程作业 RAG 问答小工具中实现了「加载文档 → 中文切块 → embedding → 相似度检索 → 塞进提示词作答」的完整流程。请详细讲讲你如何设计文本切块策略，以及为什么选择 300–500 字的切块大小？",
+          "answer_points": [
+            "说明切块在 RAG 中的作用：既要保证语义完整，又要控制检索粒度",
+            "解释 300–500 字切块对中文语义单元（段落/小节）的适配性，以及如何避免跨主题切块",
+            "结合项目经历说明切块后如何保证检索结果能返回带来源的真实片段",
+            "可补充切块与 embedding 模型（text-embedding-v3）输入长度限制的关系"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你在项目中用 FAISS 本地向量库做相似度检索。请说明 embedding 的原理，以及 FAISS 相比其他向量检索方案（如向量数据库）在你这个场景下的取舍。",
+          "answer_points": [
+            "解释 embedding 是把文本映射到向量空间、相近语义距离更近的原理",
+            "说明 FAISS 作为本地向量库的轻量、离线、无需部署服务的优势",
+            "结合课程笔记中「先检索再生成、回答指向 docs/ 原文」的 RAG 要点，说明检索质量如何保证",
+            "可提及相似度检索的局限（如语义漂移）及后续改进方向"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你的项目里用 LangGraph 把「分析 JD → 检索经历 → 生成报告」串联成节点。请讲讲 LangChain 与 LangGraph 在构建 Agent 应用时各自的定位和区别。",
+          "answer_points": [
+            "说明 LangChain 提供组件化能力（文档加载、切块、embedding、LLM 调用等）",
+            "说明 LangGraph 以图/节点方式编排有状态、可分支的 Agent 流程",
+            "结合项目经历说明为什么用 LangGraph 串联多节点而非单脚本",
+            "可提及状态传递、条件分支等对 Agent 流程控制的价值"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你在 Agent 层计划接入 resume / job / document 三个 MCP Server，把「查简历 / 记投递 / 写文档」做成独立工具。请解释 MCP 协议的价值，以及它和把逻辑写死在脚本里的区别。",
+          "answer_points": [
+            "说明 MCP 将能力封装为独立工具，Agent 按协议调用而非硬编码逻辑",
+            "结合课程笔记中「把逻辑做成独立工具、Agent 按协议调用」的要点",
+            "说明工具化带来的可复用性、可扩展性和职责解耦",
+            "可结合 FastMCP、stdio 接入的具体实现细节"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你在简历中列出了 Python、LangChain/LangGraph、FAISS、MCP 等技能。请结合你的项目，说明你如何用 Python 工程化手段（venv、dotenv、Git、日志与评测脚本）保证 RAG 应用的可维护性。",
+          "answer_points": [
+            "说明 venv 管理依赖、dotenv 管理 API Key（如 aliQwen-api）等环境配置实践",
+            "说明日志与简单评测脚本如何验证检索/生成质量",
+            "结合项目经历中「保证检索可返回带来源的真实片段」的职责，说明如何用评测保证质量",
+            "体现工程化意识对实习生岗位的价值"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 37.851
+    }
+  ]
+}

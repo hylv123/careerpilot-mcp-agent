@@ -1,0 +1,2499 @@
+{
+  "summary": {
+    "total": 20,
+    "format_passed": 20,
+    "skill_coverage_passed": 19,
+    "citation_passed": 20,
+    "citation_truth_passed": 20,
+    "hallucination_risk_count": 0,
+    "runtime_error_count": 0,
+    "elapsed_seconds": 2772.903,
+    "with_tools": false
+  },
+  "results": [
+    {
+      "id": "real-01",
+      "kind": "real",
+      "source_title": "AI & Technical Program Management Intern - AI Fund",
+      "source_url": "https://jobs.lever.co/AIFund/66bd2284-3a9b-4c58-bae1-efc78638ec64",
+      "source_case": null,
+      "jd": "AI Fund 招聘 AI 与技术项目管理实习生，要求理解 LLM、RAG 和 Agent 的应用，能够使用 Python 编写基础脚本，并接触过 LangChain 等生成式 AI 工具。",
+      "expect_skills": [
+        "Python",
+        "RAG",
+        "LangChain"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "AI 与技术项目管理实习生",
+        "company": "未识别公司",
+        "requirements": [
+          "理解 LLM、RAG 和 Agent 的应用",
+          "能够使用 Python 编写基础脚本",
+          "接触过 LangChain 等生成式 AI 工具"
+        ],
+        "keywords": [
+          "AI Agent",
+          "LLM",
+          "RAG",
+          "Python",
+          "LangChain",
+          "生成式AI",
+          "项目管理"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 Python 独立实现 RAG 检索流程（build_index.py / retrieve.py），负责文档切块、向量化（DashScope text-embedding-v3）与 FAISS 相似度检索，确保回答可溯源至原始文档片段。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "基于 LangChain / LangGraph 搭建生成式 AI Agent 应用，串联岗位分析、经历检索、工具路由与报告生成等流程，并通过 FastMCP 接入 3 个 stdio MCP Server（resume / job / document）实现工具化调用，避免逻辑全写在单脚本中。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "掌握 LLM、RAG 与 Agentic RAG 的应用要点，理解 embedding 语义映射原理，并在检索结果不足时通过查询改写、补充检索与去重提升答案质量。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在课程作业 RAG 问答小工具中实现了最小 RAG 流程。请结合这个项目，说明 RAG 的核心工作流是什么？为什么检索这一步不可或缺？你当时对切块大小和 embedding 做了哪些选择？",
+          "answer_points": [
+            "说明 RAG 完整流程：加载文档 → 按中文 300–500 字切块 → embedding 向量化 → 相似度检索 → 把片段塞进提示词让模型作答",
+            "解释为什么需要 RAG 而非直接让 LLM 回答：降低幻觉、突破知识时效限制、让回答可指向 docs/ 原文可溯源",
+            "说明工程细节：embedding 模型为阿里云百炼 text-embedding-v3，API Key 放 .env 管理",
+            "以项目管理视角拆解：文档加载、切块、索引、检索、生成各环节如何拆成可验收的小任务"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的笔记中提到「Agentic RAG」：第一轮高相关结果不足时改写查询并进行补充检索和结果去重。请讲一个你实际会遇到这类问题的场景，你会如何判断是否需要补充检索？补充检索后如何避免结果重复？",
+          "answer_points": [
+            "解释 Agentic RAG 概念：第一轮检索高相关结果不足时，由 Agent 改写查询、做补充检索，再对两轮结果去重",
+            "描述触发条件：相似度结果不足或召回片段数量不够时触发改写，而不是每次都无脑多轮检索",
+            "举具体例子：如提问「我有哪些项目经历」时首轮检索命中不足，改写为更具体的岗位/项目关键词后补充检索",
+            "说明为什么用 Agent 编排而不是把逻辑写死：查询改写、工具路由可复用，便于扩展多个数据源",
+            "说明去重策略：合并两轮结果后按内容或向量相似度去除重复片段"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你在 CareerPilot 项目里用 LangGraph 串联了岗位分析、经历检索、工具路由、匹配报告等多个节点。相比直接调用 LangChain 链，LangGraph 的图编排有什么优势？你如何设计节点之间的数据流和状态传递？",
+          "answer_points": [
+            "说明 LangGraph 的图结构优势：节点化编排岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题、岗位保存，流程可可视化、可条件路由",
+            "说明与 LangChain 的配合：LangChain 提供 Prompt 模板、FAISS 向量库等基础能力，LangGraph 负责状态流转与节点编排",
+            "说明数据流设计：每个节点输入输出用 Pydantic 约束，节点间传递结构化状态而非自由文本",
+            "以项目管理视角说明价值：每个节点可单独测试、单独记录日志，便于定位问题与并行分工"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的职责包括整理知识库、实现 build_index.py 与 retrieve.py，并接入 3 个 stdio MCP Server。请说明 MCP 这种「工具化」设计解决了什么问题？你如何保证检索返回的片段可追溯到原始文档？",
+          "answer_points": [
+            "说明 MCP 解决的问题：把「查简历 / 记投递 / 写文档」封装成独立工具，Agent 按协议调用，而不是把逻辑写死在一个脚本里，解耦且可扩展",
+            "说明个人职责中 build_index.py 的实现：读取知识库文档切块、用 DashScope text-embedding-v3 向量化、写入本地 FAISS",
+            "说明 retrieve.py 的实现：相似度检索并保证返回带来源的真实片段（指向 docs/ 原文），回答可溯源",
+            "说明工程习惯：配置放 .env（如 aliQwen-api）、职责单一、使用 Loguru 记录日志",
+            "提及技术栈：Python、LangChain、FAISS、SQLite、FastMCP，体现基础脚本能力"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你在项目中用 Pydantic 约束输出、记录节点/模型/工具/RAG 日志，并提供 20 例离线评测。作为技术项目管理实习生，你如何衡量一个 Agent 项目的质量？如果给你一周时间带一个小团队迭代这个项目，你会如何排优先级、定验收标准？",
+          "answer_points": [
+            "说明用 Pydantic 约束结构化输出的作用：保证 Agent 各节点的 JSON 输出符合下游格式要求，减少解析报错",
+            "说明日志体系：记录节点、模型、工具、RAG 各环节日志，出现问题时能按链路回溯定位",
+            "说明 20 例离线评测的构建方法：构造固定问题集，校验回答正确性、是否引用 docs/ 原文，形成可回归的评测集",
+            "以技术项目管理视角说明质量衡量：准确率、召回来源覆盖率、工具调用成功率等可量化指标",
+            "说明迭代优先级：先保证检索准确率与来源可溯，再做 Agent 编排优化，最后扩展工具与评测集；并说明如何给实习生拆分任务与设定验收标准"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 125.044
+    },
+    {
+      "id": "real-02",
+      "kind": "real",
+      "source_title": "Engineering Intern - Fluency",
+      "source_url": "https://jobs.ashbyhq.com/fluency/2aced4e2-485b-4525-802c-763e62c91e88",
+      "source_case": null,
+      "jd": "Fluency 招聘工程实习生，AI 方向需要使用 LLM 和 Agent 系统，设计 Prompt 与评测，并参与 Agent 编排、可观测性和数据流水线建设，主要语言为 Python 或 TypeScript。",
+      "expect_skills": [
+        "LLM",
+        "Agent",
+        "Python"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "工程实习生（AI方向）",
+        "company": "未识别公司",
+        "requirements": [
+          "LLM 与大模型应用",
+          "Agent 系统开发",
+          "Prompt 设计与优化",
+          "模型评测",
+          "Agent 编排",
+          "可观测性建设",
+          "数据流水线建设",
+          "Python 或 TypeScript"
+        ],
+        "keywords": [
+          "Fluency",
+          "工程实习生",
+          "AI",
+          "LLM",
+          "Agent",
+          "Prompt 设计",
+          "评测",
+          "Agent 编排",
+          "可观测性",
+          "数据流水线",
+          "Python",
+          "TypeScript"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 LangGraph 搭建 CareerPilot MCP Agent，串联岗位分析、经历检索、工具路由、匹配报告与简历要点生成等节点，实现多步骤 Agent 编排；并自建 3 个 stdio MCP Server（resume / job / document）接入工具层，完成 Agent 系统开发与工具调用集成",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "使用 Python 构建知识库数据流水线：将简历、项目经历与课程笔记文本切块后，经 DashScope text-embedding-v3 向量化写入本地 FAISS，为 LLM 提供检索增强生成（RAG）依据，避免空泛回答",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "设计并迭代 Prompt，使用 Pydantic 约束 LLM 结构化输出；记录节点、模型、工具与 RAG 日志以建设可观测性，并提供 20 例离线评测用例用于模型效果评估与优化",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你的 CareerPilot 用 LangGraph 串联了岗位分析、经历检索、工具路由、匹配报告等节点，请讲讲这个 Agent 工作流是如何设计的？为什么选择 LangGraph 来做 Agent 编排？",
+          "answer_points": [
+            "介绍 CareerPilot 用 LangGraph 串联的节点全貌：岗位分析 → 经历检索 → 工具路由 → 匹配报告 → 简历要点 → 面试题 → 岗位保存",
+            "说明选择 LangGraph 而非普通函数调用/LangChain Chain 的理由：有状态图、支持条件分支与循环、节点解耦、便于扩展与调试",
+            "说明节点之间如何通过状态对象传递数据，以及工具路由节点如何决定调用哪个 MCP Server",
+            "结合岗位要求中的『Agent 编排』，说明如果让实习生上手，会如何梳理这个工作流的状态机"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的知识层把个人文档切块后用 DashScope text-embedding-v3 向量化写入本地 FAISS，请完整描述这条数据流水线：从文档处理、向量化到检索，你是如何设计与保证检索质量的？",
+          "answer_points": [
+            "讲清知识层流水线：把简历.md、项目经历.md、课程笔记.md 切块 → DashScope text-embedding-v3 向量化 → 写入本地 FAISS",
+            "说明切块策略（块大小、是否重叠、Markdown 结构切分）以及为什么选 text-embedding-v3",
+            "说明检索流程：相似度检索，检索结果作为回答依据避免模型空泛编造",
+            "结合岗位要求中的『数据流水线建设』，谈谈如何评估检索召回质量、遇到召回不准会怎么调"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你自建了 3 个 stdio MCP Server（resume/job/document）接入 Agent，为什么选择 MCP 协议？Agent 的工具路由是怎么设计的，如何决定调用哪个工具？",
+          "answer_points": [
+            "说明用 FastMCP 自建 3 个 stdio MCP Server：resume（经历查询）、job（投递记录）、document（文档生成）",
+            "说明为什么用 MCP 协议而不是在 Agent 里直接写函数：统一工具接口、Agent 与工具实现解耦、协议标准化、可复用可插拔",
+            "讲工具路由设计：Agent 如何根据任务意图选择调用哪个工具、如何解析工具返回结果",
+            "体现 Python 与工程化能力：venv、dotenv、Git、日志的使用"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "你在项目中提供了 20 例离线评测并用 Pydantic 约束结构化输出，请讲讲你的模型评测体系是怎么设计的？Prompt 又是如何设计来配合结构化输出稳定的？",
+          "answer_points": [
+            "讲 20 例离线评测的搭建：覆盖岗位分析、经历匹配、简历要点、面试题等各环节输出，用 Pydantic 约束并校验结构化输出是否合规",
+            "说明评测维度：输出格式合规率、字段完整性、内容准确性与相关性（结合人工/规则判断）",
+            "讲 Prompt 设计：明确角色、输入、输出 JSON schema，与 Pydantic 约束配合保证稳定输出",
+            "结合岗位要求中的『模型评测』与『Prompt 设计与优化』，说明如何依据评测结果迭代 Prompt 与后处理逻辑"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你记录了节点、模型、工具和 RAG 日志来提升可靠性，请讲讲这个可观测性是怎么建设的？当一次 Agent 调用结果异常时，你会如何利用这些日志定位问题？",
+          "answer_points": [
+            "说明可观测性建设：记录了节点、模型、工具和 RAG 日志，讲清每类日志分别记录哪些关键信息",
+            "演示一次故障定位思路：某个环节输出不符合预期时，如何靠日志判断是哪个节点、哪个模型、哪个工具、检索到了什么内容导致的",
+            "说明日志如何与 20 例离线评测联动，支持回归与迭代",
+            "结合岗位要求中的『可观测性建设』，谈谈在资源有限的实习场景下如何做到轻量有效的观测"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 139.062
+    },
+    {
+      "id": "real-03",
+      "kind": "real",
+      "source_title": "Data Engineer Intern - Malt",
+      "source_url": "https://jobs.lever.co/malt/473946fd-c520-4892-a851-c486af9ed851",
+      "source_case": null,
+      "jd": "Malt 招聘数据工程实习生，要求使用 SQL、dbt 和 Python，并在数据工程代码库中构建 AI Agent；希望候选人了解 LLM、RAG、OpenAI API 或 LangChain。",
+      "expect_skills": [
+        "Python",
+        "SQL",
+        "RAG"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "数据工程实习生",
+        "company": "Malt",
+        "requirements": [
+          "SQL",
+          "dbt",
+          "Python",
+          "在数据工程代码库中构建 AI Agent",
+          "了解 LLM",
+          "了解 RAG",
+          "了解 OpenAI API 或 LangChain"
+        ],
+        "keywords": [
+          "数据工程",
+          "AI Agent",
+          "SQL",
+          "dbt",
+          "Python",
+          "LLM",
+          "RAG"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "在数据工程代码库中基于 LangChain / LangGraph 构建 AI Agent：使用 FAISS 本地向量库实现 RAG 检索，将岗位分析、经历检索、工具路由等流程串联为自动化管线，检索结果作为回答依据，避免空泛生成。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "实现 RAG 知识层数据链路：将简历、项目经历、课程笔记等文档切块后用 DashScope text-embedding-v3 向量化写入 FAISS，完成相似度召回；同时熟练使用 Python（熟练）与 SQL（常用）进行数据处理，并用 SQLite 管理结构化数据。",
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "bullet": "负责 Agent 系统的分层工程与可靠性保障：接入 3 个 stdio MCP Server（resume / job / document）管理数据访问，使用 Pydantic 约束 LLM 结构化输出，记录节点、模型、工具与 RAG 日志，并提供 20 例离线评测验证检索与生成效果。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "岗位要求『在数据工程代码库中构建 AI Agent』。你在 CareerPilot 里是如何用 LangGraph + MCP 设计 Agent 的分层架构的？如果把同样的思路迁移到数据工程代码库（如 dbt 项目），你会怎么做？",
+          "answer_points": [
+            "说明 CareerPilot 是输入岗位 JD 后完成岗位分析、经历匹配、简历改写与面试题生成的 Agent 系统",
+            "阐述分层架构：知识层（文本切块+向量化+FAISS）、Agent 层（LangGraph 串联岗位分析/经历检索/工具路由/匹配报告等节点）、工具层（3 个 stdio MCP Server）",
+            "解释为什么在数据工程代码库中构建 AI Agent 需要把『数据流水线』思维融入 Agent：数据切块、检索、路由、日志都是数据流的一部分",
+            "结合岗位要求，说明自己会用同样的工程化方式去构建数据处理 Agent，例如把 dbt 模型产出作为知识来源"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你在 CareerPilot 中实现了完整的 RAG 流程（切块 → text-embedding-v3 向量化 → FAISS 存储 → 相似度检索）。请详细讲讲这个流程，以及你会如何评估和提升检索质量？",
+          "answer_points": [
+            "讲清楚 RAG 流水线：简历.md、项目经历.md、课程笔记.md 切块后用 DashScope text-embedding-v3 向量化写入本地 FAISS",
+            "说明检索策略：提问后通过相似度召回对应文档片段，检索结果作为回答依据，避免空泛描述",
+            "结合课程笔记反思切块边界问题——保证一段经历不被拆得过碎，体现对 chunking 质量的理解",
+            "联系岗位要求中的『了解 RAG』，说明自己理解 embedding 选择、向量库存储、相似度检索、召回质量评估这几个关键环节"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位要求掌握 SQL 和 dbt。你在项目中用 SQLite 管理投递记录（公司、岗位、状态、时间），也写 SQL 查询。请谈谈你对结构化数据建模和 SQL 实践的理解，以及你打算如何上手 dbt（如模型分层、测试、文档化）？",
+          "answer_points": [
+            "说明自己 SQL 属于常用技能，并在项目中用 SQLite 存储投递记录：公司、岗位、状态、时间",
+            "区分两种数据形态：知识库用 FAISS 文件不走数据库服务，结构化业务数据（投递记录）用 SQLite，体现对存储选型的判断",
+            "结合数据库系统课程笔记，说明掌握关系模型、主键外键、SQL 查询等基础",
+            "主动表明对 dbt 的理解或学习意愿：dbt 用于 SQL 转换层、模型测试、文档化，和自己在 Agent 里用 Pydantic 约束输出、用评测脚本保障质量的思路一致"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你的 Agent 通过 MCP（stdio）接入 3 个工具 Server，并用 Pydantic 约束结构化输出、记录节点/模型/工具/RAG 日志。请解释这套工具调用与可靠性设计的动机，以及如果改用 OpenAI API 直接调用你会如何设计函数调用（function calling）？",
+          "answer_points": [
+            "说明工具层接入 3 个 stdio MCP Server（resume / job / document），分别管理经历查询、投递记录和文档生成",
+            "讲清楚 FastMCP 自建 Server 与 MCP 协议（stdio 接入 Agent），体现对『工具调用』的理解",
+            "解释为何用 Pydantic 约束结构化输出：保证节点输出、工具返回符合 schema，提高可靠性",
+            "结合岗位『了解 OpenAI API 或 LangChain』，说明自己通过 LangChain/LangGraph 生态间接使用 LLM 调用，并有日志记录模型/节点/工具调用"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "作为一个数据工程实习生，你如何把 AI Agent / RAG 的经验转化为对数据工程团队的日常贡献？请结合你在 CareerPilot 中的工程实践（版本管理、日志、评测脚本）谈谈你的工作方式和学习计划。",
+          "answer_points": [
+            "说明自己正在完成 CareerPilot 实习项目：输入 JD 后系统自动完成岗位分析、经历匹配、简历改写与面试题生成，产出端到端",
+            "强调工程能力：venv、dotenv、Git、日志与简单评测脚本，以及提供 20 例离线评测验证系统可靠性",
+            "说明在数据工程视角下，Agent 本质是一条『数据流水线』：原始文档 → 切块 → 向量化 → 检索 → 结构化输出，可以用评测脚本量化召回与生成质量",
+            "表达作为实习生如何快速补齐 dbt 技能并贡献到数据工程团队：基于 SQL 基础 + 数据流水线思维，可快速上手 dbt 模型开发与测试"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 113.878
+    },
+    {
+      "id": "real-04",
+      "kind": "real",
+      "source_title": "GTM AI Engineering Intern - G2",
+      "source_url": "https://jobs.ashbyhq.com/G2/c61dbaff-87e5-4481-82a7-0636e8aea415",
+      "source_case": null,
+      "jd": "G2 招聘 GTM AI 工程实习生，参与 AI Agent 的开发部署与自动化工作流建设，要求具备 Python 编程能力、API 与 SDK 使用经验，并熟悉 LLM 平台和 Prompt Engineering。",
+      "expect_skills": [
+        "Agent",
+        "Python",
+        "API"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "GTM AI 工程实习生",
+        "company": "未识别公司",
+        "requirements": [
+          "Python 编程能力",
+          "API 与 SDK 使用经验",
+          "熟悉 LLM 平台",
+          "Prompt Engineering 技能",
+          "AI Agent 开发部署经验",
+          "自动化工作流建设能力"
+        ],
+        "keywords": [
+          "AI Agent",
+          "GTM",
+          "Python",
+          "LLM 平台",
+          "Prompt Engineering",
+          "API 开发",
+          "SDK",
+          "自动化工作流"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 Python、LangChain、LangGraph 与 FastMCP 开发 CareerPilot MCP Agent（实习求职助手），将岗位分析、能力匹配、简历改写与面试题生成整合为固定自动化工作流，输入岗位 JD 即可输出完整结果。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "调用阿里云百炼 LLM 平台 text-embedding-v3 API 实现文本向量化，构建 FAISS 本地向量库做相似度检索，并将 API Key 等敏感配置通过 .env + dotenv 管理。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "bullet": "基于 RAG 与 Agentic RAG 设计检索增强链路：当第一轮检索结果相关性不足时自动改写查询、补充检索并去重；自建 MCP Server（stdio 接入）将查简历、记投递、写文档封装为独立工具，供 Agent 按协议调用。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在 CareerPilot MCP Agent 里用 Python 搭建了一个完整的 Agent 工作流。请讲一下它的整体架构，以及你在工程化（环境管理、日志、评测）上具体做了什么？",
+          "answer_points": [
+            "先描述 CareerPilot MCP Agent 的整体架构：输入岗位 JD 后按固定工作流依次完成岗位分析、经历匹配、简历改写与面试题生成，用 LangChain / LangGraph 编排流程节点，而不是单脚本硬编码",
+            "说明个人知识库（简历、项目经历、课程笔记）如何用 FAISS 本地向量库做文本切块与相似度检索，检索结果作为回答依据避免空泛",
+            "点出 FastMCP 自建 Server、stdio 方式接入 Agent 的工程结构，以及 venv、dotenv、Git、Loguru 日志、简单评测脚本等 Python 工程化实践",
+            "结合实习生定位，强调能独立搭建一个端到端的 AI Agent 流程"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "你实际调用了阿里云百炼的 embedding API。请说说你是如何集成这个第三方 API 的？在 API Key 管理、请求封装和结果使用上有什么讲究？",
+          "answer_points": [
+            "说明调用阿里云百炼 text-embedding-v3 生成 embedding 的流程，以及把 API Key 放进 .env 用 dotenv 管理、避免硬编码的做法",
+            "讲清楚 embedding 把文本映射到向量空间、相近语义距离更近的原理，以及为什么选向量检索来做经历匹配",
+            "说明在使用 LLM 平台/API 时如何处理请求封装、结果处理和失败降级（结合 Loguru 日志）",
+            "延伸说明这套 API + SDK 调用经验如何迁移到其他 LLM 平台"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你的项目强调 RAG 和 Agentic RAG。请结合实例说明：当首轮检索结果不理想时，你是如何通过改写查询、补充检索和去重来提升回答质量的？",
+          "answer_points": [
+            "说明项目遵循「先检索再生成」的 RAG 原则，回答必须能指向 docs/ 里的原文，避免模型空泛编造",
+            "讲 Agentic RAG 的细节：当第一轮高相关结果不足时，如何改写查询并做补充检索、结果去重",
+            "给出一个实际场景：当 JD 关键词在知识库中检索不到足够内容时，你的 prompt 是怎么引导 Agent 改写查询并二次检索的",
+            "总结 prompt 工程的核心经验：把任务边界、检索依据、输出格式写清楚，提升回答可控性"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你在项目中用 MCP 把多个能力做成了独立工具。为什么选择这种「工具化」而非「逻辑写死」的设计？请结合 FastMCP 自建 Server 的实践讲一下。",
+          "answer_points": [
+            "解释为什么把「查简历 / 记投递 / 写文档」做成独立工具（MCP Server）而不是把逻辑全写死在一个脚本里，讲清模块化与可复用的好处",
+            "说明用 FastMCP 自建 Server、通过 stdio 接入 Agent 的具体做法和协议调用过程",
+            "举一个 Agent 在流程中实际调用某个工具完成子任务的例子，体现工具调用的编排能力",
+            "延伸到 GTM 场景：这类工具化思路如何应用到营销内容生成、线索整理、客户信息查询等自动化环节"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "CareerPilot 的定位是「按固定工作流输出岗位分析、匹配与面试题」的自动化助手。请讲讲你是如何设计和实现这个多步骤自动化工作流的？如果把它迁移到 GTM（Go-to-Market）场景，你会自动化哪些环节？",
+          "answer_points": [
+            "描述 CareerPilot 的固定工作流：输入岗位 JD 和候选人资料后，自动产出岗位分析、能力匹配、定制简历要点和面试题，说明你如何设计这个自动化流水线",
+            "说明如何用 LangGraph 编排多步骤流程、用 SQLite 保存中间数据，保证每个环节可追踪可复用",
+            "类比到 GTM 自动化：如何用同样的思路把重复性工作（如线索打分、外联邮件生成、内容个性化）做成 Agent 工作流",
+            "结合实习生身份，说明你会如何快速验证一个自动化流程的准确性，以及后续迭代方向"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 105.682
+    },
+    {
+      "id": "real-05",
+      "kind": "real",
+      "source_title": "AI Engineering Intern - QuantCo",
+      "source_url": "https://jobs.lever.co/quantco-/da68e273-8f7e-47a7-a7d6-bf658a52561b",
+      "source_case": null,
+      "jd": "QuantCo 招聘 AI 工程实习生，负责设计、测试与部署 AI 系统，建设数据和推理流水线，并编排集成 RAG 等 LLM 组件；岗位要求具备 Python 编程经验。",
+      "expect_skills": [
+        "Python",
+        "RAG",
+        "LLM"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "AI 工程实习生",
+        "company": "QuantCo",
+        "requirements": [
+          "Python 编程经验",
+          "设计、测试与部署 AI 系统",
+          "建设数据和推理流水线",
+          "编排集成 RAG 等 LLM 组件"
+        ],
+        "keywords": [
+          "AI工程",
+          "实习生",
+          "Python",
+          "RAG",
+          "LLM",
+          "数据流水线",
+          "推理流水线"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 Python 独立开发并部署 AI 实习求职助手 CareerPilot MCP Agent：输入岗位 JD 与候选人资料后，以固定工作流编排岗位分析、能力匹配、定制简历要点与面试题生成，打通从输入到输出的完整 AI 推理流水线。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "基于 FAISS 本地向量库搭建 RAG 检索组件，通过文本切块与相似度检索从个人知识库中召回简历、项目经历与课程笔记作为回答依据，建设数据检索与推理流水线，避免空泛描述。",
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "bullet": "使用 LangChain / LangGraph 编排 LLM 工作流，自建 FastMCP Server（stdio 接入 Agent）集成大模型组件，并配合日志与评测脚本对输出结果进行测试与验证。",
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在 CareerPilot 中实现了基于向量检索的经历匹配，请描述从文档切块、向量化到 FAISS 相似度检索的完整流程，以及为什么选择这种方案？",
+          "answer_points": [
+            "结合 CareerPilot 描述完整 RAG 链路：读取简历/JD 文档→文本切块→FAISS 本地向量库入库→query 向量化→相似度检索→返回 top-k 结果作为上下文",
+            "说明为什么选择 FAISS 而非其他向量库（本地、轻量、适合原型与学习场景）",
+            "提及检索结果作为回答依据，避免大模型空泛生成，体现对『检索增强』目的的理解",
+            "可补充切块策略（chunk size/overlap）如何影响检索质量"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "CareerPilot 按固定工作流完成岗位分析和面试题生成，请讲讲你是如何用 LangGraph/LangChain 设计和编排这条推理流水线的？",
+          "answer_points": [
+            "说明用 LangChain/LangGraph 把『岗位分析→能力匹配→简历改写→面试题生成』拆成固定节点与依赖关系",
+            "强调结构化工作流相比自由 prompt 调用的优势：可观测、可控制顺序、便于插入评测与回退逻辑",
+            "举例说明每个节点输入输出如何衔接（前一步检索结果如何作为后一步 LLM 调用的上下文）",
+            "结合岗位要求谈对『编排集成 LLM 组件』的理解"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你通过 FastMCP 自建 Server 并以 stdio 接入 Agent，请从数据流转角度描述这条工具调用流水线，并说明为什么用 MCP 协议封装能力？",
+          "answer_points": [
+            "解释 MCP Server 的角色：把『岗位分析、经历匹配、简历改写』等能力封装成标准工具供 Agent 调用",
+            "描述 stdio 接入方式下 Agent 与 Server 的通信流程：JSON-RPC 请求→工具执行→结果返回",
+            "说明这条链路中数据如何流转：JD 输入→工具解析→知识库检索→结构化输出",
+            "体现对『数据和推理流水线』设计、解耦与可复用性的思考"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "简历里提到你有『日志与简单评测脚本』，作为实习生你如何验证 CareerPilot 这样的 AI 系统输出是可靠的？遇到检索不到依据或输出偏离格式时你会怎么处理？",
+          "answer_points": [
+            "坦诚说明实习阶段的做法：日志记录每次 LLM 调用的输入/输出与耗时，用简单评测脚本比对生成结果与预期格式",
+            "讨论如何定义『输出可靠』：格式可解析、字段完整、检索依据真实存在而非编造",
+            "说明你如何用知识库检索结果约束回答（来源落地）来降低幻觉",
+            "表达对生产级评测（如 golden set、指标量化）的认知与学习意愿"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "RAG 系统的检索质量直接影响下游生成效果。如果检索结果与岗位 JD 匹配不佳、导致下游分析不准确，你会从哪些环节排查和优化？",
+          "answer_points": [
+            "定位问题分层：数据层（文档质量/切块策略）→检索层（相似度阈值/返回条数）→生成层（prompt 上下文组织）",
+            "结合 CareerPilot 经历：通过调整文本切块、检查 FAISS 返回结果、增加检索依据约束来排查空泛回答",
+            "说明会先写小评测脚本抽样检查检索命中是否合理，再决定调参方向",
+            "强调数据与推理流水线中『检索质量影响下游生成』的工程意识"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 120.517
+    },
+    {
+      "id": "real-06",
+      "kind": "real",
+      "source_title": "Software Engineering Intern - Auctor",
+      "source_url": "https://jobs.ashbyhq.com/auctor/9d67c881-3ca7-4616-a059-e94c03e19607/",
+      "source_case": null,
+      "jd": "Auctor 招聘软件工程实习生，使用 Next.js 与 Python 开发产品功能，原型化和评测 LLM Agent 工作流，并针对大型企业数据建设检索流水线；希望候选人了解向量数据库。",
+      "expect_skills": [
+        "Python",
+        "Agent",
+        "检索"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "软件工程实习生",
+        "company": "Auctor",
+        "requirements": [
+          "Next.js 前端开发",
+          "Python 后端开发",
+          "产品功能开发",
+          "LLM Agent 工作流原型化与评测",
+          "企业级数据检索流水线建设",
+          "了解向量数据库"
+        ],
+        "keywords": [
+          "Next.js",
+          "Python",
+          "LLM Agent",
+          "向量数据库",
+          "检索流水线"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 LangGraph 原型化 LLM Agent 工作流，串联岗位分析、经历检索、工具路由、匹配报告与简历要点等节点；使用 Pydantic 约束结构化输出，记录节点/模型/工具/RAG 日志，并提供 20 例离线评测保障可靠性。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "使用 Python 与 LangChain/LangGraph/FastMCP 开发后端检索能力，落地“文本切块→向量化→相似度检索”的数据检索流水线，基于 FAISS 本地向量库支撑知识库召回，检索结果真实且可溯源。",
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "bullet": "独立实现 build_index.py 与 retrieve.py 构建索引与检索模块，完成课程 RAG 问答工具，实现“加载文档→中文 300–500 字切块→embedding→相似度检索→片段注入提示词”的完整检索问答流水线，保证返回带来源的真实片段。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在 CareerPilot 里用 LangGraph 串联了哪些节点？请讲讲 Agent 工作流的状态流转和工具路由逻辑，以及为什么用 LangGraph 而不是简单顺序调用 LLM。",
+          "answer_points": [
+            "介绍 CareerPilot 中 LangGraph 的完整节点链路：岗位分析 → 经历检索 → 工具路由 → 匹配报告 → 简历要点 → 面试题 → 岗位保存",
+            "解释选择 LangGraph 而非简单 Chain 的原因：支持条件分支、状态传递、节点级可观测",
+            "说明工具路由的设计：Agent 如何根据当前任务决定调用哪个工具/Server",
+            "结合实习岗要求，说明这套工作流如何体现'LLM Agent 工作流原型化'的完整闭环"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "请还原你构建检索流水线的过程：从文档切块、向量化到 FAISS 检索。如果是企业级数据（海量文档、多租户），你会在现有方案上做哪些增强？",
+          "answer_points": [
+            "描述检索流水线的完整链路：文档切块（中文 300-500 字）→ DashScope text-embedding-v3 向量化 → 写入本地 FAISS → 相似度检索",
+            "说明如何保证返回'带来源的真实片段'，而不是让模型凭空编造（retrieve.py 返回可追溯的原文）",
+            "解释个人知识库分层：简历、项目经历、课程笔记分别切块索引",
+            "结合企业级要求谈优化方向：混合检索、重排序、元数据过滤、索引版本管理等"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "LLM 输出不稳定是 Agent 项目的常见痛点。你在 CareerPilot 里如何通过 Pydantic、日志和 20 例离线评测来保障输出质量与可追溯性？",
+          "answer_points": [
+            "说明可靠性保障手段：Pydantic 约束结构化输出，避免 Agent 返回非法格式",
+            "介绍日志体系：记录节点、模型、工具和 RAG 日志，便于排查每次调用链路",
+            "讲解 20 例离线评测：评测集怎么构造、判定标准是什么、失败用例如何驱动迭代",
+            "体现'评测驱动开发'：先定指标再改 Prompt/流程，这是 LLM Agent 评测的必备思路"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你在技能清单里提到自建 MCP Server 并通过 stdio 接入 Agent。请讲讲 MCP 在你系统里解决什么问题，三个 Server 的职责边界如何划分？",
+          "answer_points": [
+            "说明 3 个 stdio MCP Server 的职责划分：resume（经历查询）、job（投递记录）、document（文档生成）",
+            "解释为什么选 stdio 方式接入，以及 MCP 协议如何让 Agent 与工具解耦",
+            "提到用 FastMCP 自建 Server 的经历，说明对 MCP 协议原理（工具注册、调用、返回结构化结果）的理解",
+            "说明 MCP 带来的工程价值：工具可插拔、可复用，Agent 可动态发现能力"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "岗位要求用到 Next.js 前端。你目前的 CareerPilot 主要是 Python 后端脚本形态，如果把它产品化成 Web 应用，你会如何规划前后端接口与页面功能？",
+          "answer_points": [
+            "坦承当前 CareerPilot 是本地脚本形态，但说明其 Python 后端能力（LangGraph 工作流、FAISS 检索）可以封装为 REST API 供前端调用",
+            "规划产品化思路：输入 JD → 展示岗位分析 → 匹配报告 → 面试题列表的端到端功能流程",
+            "说明如何补足 Next.js：页面路由、客户端/服务端组件、调用后端接口渲染结果",
+            "体现产品功能开发视角：从'能用'到'好用'，考虑状态管理、加载态、结果持久化"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 131.83
+    },
+    {
+      "id": "real-07",
+      "kind": "real",
+      "source_title": "AI Intern - Infinite Machine",
+      "source_url": "https://jobs.ashbyhq.com/infinite-machine/265d75f2-8d42-4d6b-9ecd-13d65a4b5d1a/",
+      "source_case": null,
+      "jd": "Infinite Machine 招聘 AI 实习生，使用 LLM Agent、脚本和工作流自动化增强公司业务，建设内部工具、Dashboard 与自动化能力；加分技能包括 Python 和 JavaScript/TypeScript。",
+      "expect_skills": [
+        "LLM",
+        "Agent",
+        "Python"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "AI 实习生",
+        "company": "Infinite Machine",
+        "requirements": [
+          "LLM Agent 开发与应用",
+          "脚本编写",
+          "工作流自动化",
+          "内部工具建设",
+          "Dashboard 开发",
+          "自动化能力",
+          "Python（加分）",
+          "JavaScript/TypeScript（加分）"
+        ],
+        "keywords": [
+          "AI",
+          "LLM Agent",
+          "自动化",
+          "工作流",
+          "内部工具",
+          "Dashboard",
+          "Python",
+          "JavaScript",
+          "TypeScript"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 LangGraph 开发 LLM Agent（CareerPilot MCP Agent），串联岗位分析、经历检索、工具路由、匹配报告、简历要点与面试题生成等固定工作流，实现输入 JD 后全流程自动化处理",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "建设内部工具：自建 3 个 stdio MCP Server（resume / job / document），分别管理经历查询、投递记录与文档生成，将重复逻辑封装为可复用工具，支撑工作流自动化",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "使用 Python 实现 RAG 检索增强生成：接入 DashScope text-embedding-v3 将简历、项目经历与课程笔记切块向量化并写入本地 FAISS，用 Pydantic 约束结构化输出、记录节点/模型/工具日志，并提供 20 例离线评测保障可靠性",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "CareerPilot 里你用 LangGraph 串联了岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题和岗位保存这些节点。请详细讲一下这个 Agent 工作流是怎么设计的？为什么选择图编排而不是直接写一个顺序执行的 Python 脚本？",
+          "answer_points": [
+            "说明项目分为知识/Agent/工具三层，Agent 层负责整体编排",
+            "讲清节点间的数据流：岗位分析 → 经历检索 → 工具路由 → 匹配报告 → 简历要点 → 面试题 → 岗位保存",
+            "解释为什么选 LangGraph 图编排而非顺序脚本：支持条件分支、动态工具路由、节点可复用可单独调试",
+            "结合'工具路由'节点说明 Agent 如何根据输入决定调用 resume/job/document 哪个 MCP 工具"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "这是一个典型的 RAG 应用。请讲讲你如何把个人知识库做成可检索的：怎么切块、怎么向量化、为什么选 FAISS 本地向量库？检索结果又是如何约束 Agent 的回答、避免它空泛发挥的？",
+          "answer_points": [
+            "切块：把简历.md、项目经历.md、课程笔记.md 等 Markdown 文档切块，按语义单元保留上下文",
+            "向量化：用阿里云百炼 DashScope text-embedding-v3，API Key 放 .env 管理",
+            "检索：FAISS 本地向量库做相似度检索，无需外部服务，召回后作为回答依据",
+            "Agentic RAG：第一轮高相关结果不足时改写查询、补充检索并去重",
+            "回答要能指向 docs/ 里的原文，避免空泛描述"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你把'查简历 / 记投递 / 写文档'做成了 3 个 stdio MCP Server（resume / job / document）。为什么选择 MCP 协议而不是把功能直接写死在 Agent 代码里？这种设计对你建设内部工具有什么实际好处？",
+          "answer_points": [
+            "把'查简历 / 记投递 / 写文档'拆成独立 MCP Server（resume / job / document），通过 stdio 接入 Agent",
+            "解释选 MCP 的原因：工具能力与 Agent 逻辑解耦，Agent 按协议调用而不是把逻辑全写死在一个脚本里",
+            "stdio 方式的好处：本地进程间通信、配置简单、权限可控，适合内部工具",
+            "说明这套模式对'内部工具建设'的意义：工具可独立维护、复用、扩展，新增能力不用改 Agent 主流程"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "LLM 输出不可控、跑偏是 Agent 落地的常见问题。你在项目里用 Pydantic 约束结构化输出，记录节点/模型/工具/RAG 日志，还提供了 20 例离线评测。请具体讲讲这套可靠性方案是怎么设计并落地的？",
+          "answer_points": [
+            "Pydantic：用 schema 约束 Agent 的结构化输出（岗位分析、匹配报告、面试题等），保证下游可直接消费",
+            "日志：记录每个节点、使用的模型、调用的工具以及 RAG 检索记录，出现偏差时可定位到具体环节",
+            "离线评测：准备了 20 例评测用例，验证检索召回与生成质量，形成可量化回归基线",
+            "说明如何把评测脚本化，与日志结合形成可重复运行的自动化验证闭环"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位还要求脚本编写、工作流自动化和 Dashboard 开发（加分项）。你的技能清单里有 venv、dotenv、Git、日志与简单评测脚本。请结合实践说说你如何保证项目可复现、可自动化运行？以及你会怎么把 CareerPilot 的经验迁移到内部 Dashboard 开发上？",
+          "answer_points": [
+            "工程化基本功：用 venv 管理依赖、dotenv 管理 API Key、Git 做版本控制，保证环境可复现、他人可接手",
+            "自动化：把日志与评测写成脚本，一键运行验证，形成可重复的自动化工作流",
+            "迁移思路：Dashboard 本质也是内部工具，可复用'输入数据 → 结构化处理 → 展示'的链路，先讲清楚数据来源与自动化管道",
+            "诚实说明 Dashboard 尚未做过，但给出可行落地方案：Python 后端 + 现有 Web 框架快速搭原型，并说明自己愿意补齐 JS/TS 技能"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 145.937
+    },
+    {
+      "id": "real-08",
+      "kind": "real",
+      "source_title": "Software Engineer (Agent Platform) Intern - Netic",
+      "source_url": "https://jobs.ashbyhq.com/netic/b0ea7aab-8eea-4d31-96f9-278364180ae7",
+      "source_case": null,
+      "jd": "Netic 招聘 Agent Platform 软件工程实习生，参与多 Agent 工作流编排、Agent 评测循环、Guardrail 与回滚机制；希望候选人熟悉 Python、FastAPI、LLM API、RAG、LangChain 或 MCP。",
+      "expect_skills": [
+        "Python",
+        "FastAPI",
+        "MCP"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "Agent Platform 软件工程实习生",
+        "company": "Netic",
+        "requirements": [
+          "Python",
+          "FastAPI",
+          "LLM API",
+          "RAG",
+          "LangChain 或 MCP",
+          "多 Agent 工作流编排",
+          "Agent 评测循环",
+          "Guardrail 与回滚机制"
+        ],
+        "keywords": [
+          "Agent Platform",
+          "多 Agent 工作流编排",
+          "Agent 评测循环",
+          "Guardrail",
+          "回滚机制",
+          "Python",
+          "FastAPI",
+          "LLM API",
+          "RAG",
+          "LangChain",
+          "MCP"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 LangGraph 编排多 Agent 工作流（岗位分析、经历检索、工具路由、匹配报告等节点），并接入 3 个 stdio MCP Server（resume/job/document）作为独立工具，实现 Agent 平台化的工具解耦与按协议调用。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "使用 Python 构建 RAG 检索增强生成链路：将简历、项目经历、课程笔记切块后经 DashScope text-embedding-v3 向量化写入 FAISS，检索结果作为回答依据，避免空泛描述。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "以 Pydantic 约束结构化输出作为 Guardrail，记录节点/模型/工具/RAG 日志，并编写 20 例离线评测构建 Agent 评测循环，为结果回滚与迭代优化提供数据依据。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你的 CareerPilot 项目用 LangGraph 串联了多个处理环节。请讲讲这个多 Agent/多节点工作流是如何编排的？为什么选择图编排而不是直接写脚本？",
+          "answer_points": [
+            "用 LangGraph 把岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题、岗位保存串联成固定工作流，说明节点之间的状态传递方式",
+            "解释为什么选择有向图编排而非单脚本线性调用：可观察、可插拔、便于后续加节点或回滚",
+            "结合岗位要求谈多 Agent 拆分的边界：什么功能应该做成独立节点/Agent，什么功能应该收敛为工具",
+            "提到实习场景下对稳定性与可维护性的取舍"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "RAG 是本岗位的核心技能之一。请结合 CareerPilot 的实践，说明你如何把简历/项目经历/课程笔记做成可检索的知识层，以及你理解的 Agentic RAG 与普通 RAG 的区别。",
+          "answer_points": [
+            "介绍知识层：简历.md、项目经历.md、课程笔记.md 切块后用 DashScope text-embedding-v3 向量化写入本地 FAISS",
+            "说明检索链路：如何从提问到召回、如何保证回答指向 docs/ 原文，避免空泛生成",
+            "对比普通 RAG 与 Agentic RAG：第一轮召回不足时改写查询、补充检索并去重，体现把检索当成可被 Agent 调用的能力",
+            "可以提 embedding 相似度对召回质量的影响以及你自己的验证方式"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你项目中通过 MCP 把「查简历/记投递/写文档」做成了独立工具。为什么用 MCP 而不是把逻辑直接写在 Agent 脚本里？如果让你用 FastAPI 重新实现这些工具，你会怎么设计？",
+          "answer_points": [
+            "说明工具层设计：把查简历、记投递、写文档做成 3 个 stdio MCP Server，Agent 按协议调用而非写死逻辑",
+            "解释 MCP 相比直接函数调用的收益：协议标准化、能力复用、关注点分离",
+            "结合岗位要求谈 FastAPI/MCP 在 Agent Platform 中扮演的角色：Agent 与外部能力之间的统一接口",
+            "可补充自己用 FastMCP 搭建 Server 的工程细节（stdio 接入、工具注册）"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "岗位要求具备 Agent 评测循环能力。你项目中提到的 20 例离线评测是如何组织的？它和日志记录如何共同驱动你迭代 Agent 的质量？",
+          "answer_points": [
+            "说明评测循环：项目提供了 20 例离线评测，覆盖提问→检索→生成整条链路",
+            "说明评测关注点：RAG 召回是否正确、结构化输出是否合法、回答是否指向 docs/ 原文",
+            "结合岗位「Agent 评测循环」要求，谈如何把离线评测沉淀为回归集、在改动 Agent 后自动跑",
+            "说明日志设计：记录节点、模型、工具和 RAG 日志，作为定位问题和迭代依据"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "Agent 平台的可靠性至关重要。你在项目中用 Pydantic 约束结构化输出，这属于哪一类 Guardrail？结合你的图编排与日志设计，谈谈当某个 Agent 节点输出错误时你会如何发现并回滚？",
+          "answer_points": [
+            "说明用 Pydantic 约束结构化输出：让模型输出可校验、可解析，从源头拦截格式错误",
+            "结合岗位「Guardrail 与回滚机制」：Guardrail 不仅指输入校验，还包括对模型输出的约束、RAG 低置信时的兜底策略",
+            "谈回滚：图编排下节点可观测、日志可回溯，出现问题时可定位到具体节点/工具并回退版本",
+            "说明在实习项目中如何在成本、速度和安全性之间做取舍，以及 Agent 输出出错时的兜底方案"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 177.07
+    },
+    {
+      "id": "real-09",
+      "kind": "real",
+      "source_title": "AI FS Engineer Intern - Intelligent Internet",
+      "source_url": "https://jobs.ashbyhq.com/Intelligent.Internet/4f9bdc2c-8333-4654-82fe-7392069e4174/",
+      "source_case": null,
+      "jd": "Intelligent Internet 招聘 AI 全栈工程实习生，使用 Python、FastAPI 或 Flask 构建 Agent 工作流后端，开发基于 Qdrant、Pinecone 或 FAISS 的 RAG 组件，并要求熟悉 API、Git 与 Docker。",
+      "expect_skills": [
+        "Python",
+        "FastAPI",
+        "FAISS"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "AI 全栈工程实习生",
+        "company": "未识别公司",
+        "requirements": [
+          "Python",
+          "FastAPI 或 Flask",
+          "Agent 工作流后端构建",
+          "RAG 组件开发（Qdrant/Pinecone/FAISS）",
+          "API 使用",
+          "Git 版本控制",
+          "Docker 容器化"
+        ],
+        "keywords": [
+          "AI Agent",
+          "全栈工程",
+          "Python",
+          "FastAPI",
+          "Flask",
+          "RAG",
+          "Qdrant",
+          "Pinecone",
+          "FAISS",
+          "API",
+          "Git",
+          "Docker",
+          "实习生"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 LangGraph 构建 Agent 工作流后端，串联岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题和岗位保存等节点，并使用 Pydantic 约束结构化输出，保证流程产出的可靠与稳定。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "开发 RAG 检索组件：将简历、项目经历、课程笔记等文档切块后用 DashScope text-embedding-v3 向量化并写入本地 FAISS，实现基于语义相似度的内容召回；对高相关结果不足时执行查询改写与补充检索、结果去重，提升检索精度。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "bullet": "使用 Python 实现后端与 API 集成，接入 3 个基于 MCP 协议的 stdio 服务（resume / job / document）作为独立工具，Agent 按协议调用以完成经历查询、投递记录与文档生成；并记录节点、模型、工具及 RAG 日志，提供 20 例离线评测。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你的 CareerPilot 项目在知识层把简历、项目经历、课程笔记切块后用 DashScope text-embedding-v3 向量化并写入 FAISS。请完整讲一遍这条 RAG 链路：切块策略、embedding 调用、向量入库和检索召回，并说明如何保证『我有哪些项目经历』这类问题能准确命中原文？",
+          "answer_points": [
+            "完整描述 RAG 链路：把 简历.md、项目经历.md、课程笔记.md 切块后用 DashScope text-embedding-v3 向量化，写入本地 FAISS，体现对向量检索组件（岗位要求中的 FAISS）的实操能力",
+            "说明 embedding 通过阿里云百炼 API 调用，API Key 放在 .env 的 aliQwen-api，体现 API 使用经验",
+            "解释检索逻辑：语义相似度计算、top-k 召回，回答需能指向 docs/ 里的原文，保证可追溯",
+            "结合『我有哪些项目经历』的召回场景，说明如何确保命中正确内容（课程笔记中提到 RAG 要指向原文）"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "Agent 层你用 LangGraph 串联了岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题和岗位保存等节点。请描述这个工作流的节点设计与状态流转，并解释为什么选择 LangGraph 而不是按顺序写一个 Python 脚本？",
+          "answer_points": [
+            "列出 LangGraph 工作流节点及各自职责：岗位分析→经历检索→工具路由→匹配报告→简历要点→面试题→岗位保存，展示 Agent 工作流后端构建能力（岗位核心要求）",
+            "说明 LangGraph 的状态管理机制：状态如何在节点间流转、支持条件分支与工具路由，而非简单顺序调用",
+            "对比纯 Python 脚本：LangGraph 提供可观测性、可扩展性和节点复用，便于迭代调试",
+            "结合输入岗位 JD 和候选人资料→固定工作流输出结果的整体流程收束回答"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "课程笔记里你总结了『Agentic RAG：第一轮高相关结果不足时改写查询，补充检索并去重』，也提到把『查简历 / 记投递 / 写文档』做成独立 MCP 工具。请对比普通 RAG 与 Agentic RAG，并说明把工具做成 MCP Server 而不是写死在一个脚本里的动机与收益？",
+          "answer_points": [
+            "先讲 RAG 基础：先检索再生成，回答要能指向 docs/ 里的原文，体现对 RAG 本质的理解",
+            "再讲 Agentic RAG：第一轮高相关结果不足时改写查询、进行补充检索、对结果去重，对比普通 RAG 的改进点",
+            "说明 MCP 设计动机：把『查简历 / 记投递 / 写文档』做成独立工具，Agent 按协议调用，而不是把逻辑全写死在一个脚本里",
+            "总结收益：解耦、职责单一、可扩展（新增工具只需注册 MCP Server）"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "项目里你用 Pydantic 约束结构化输出，记录节点、模型、工具和 RAG 日志，并提供 20 例离线评测。对于一个 Agent 后端，这套可靠性设计分别解决了什么问题？具体你是怎么做的？",
+          "answer_points": [
+            "解释 Pydantic 约束结构化输出的价值：保证 LLM 输出符合固定 Schema，可被下游程序稳定消费（如匹配报告、面试题的 JSON 结构）",
+            "说明日志设计：记录节点、模型、工具和 RAG 日志，用于问题定位、链路追踪和调优",
+            "讲清楚 20 例离线评测的做法：固定测试集上回归验证召回与生成质量，量化评估 Agent 效果",
+            "升华到 Agent 后端的可靠性问题：LLM 输出不稳定、链路长，需要结构化、可观测、可评测三件套"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "请介绍 CareerPilot 的整体三层架构和技术选型理由：为什么选 FAISS 而不是 Qdrant/Pinecone？为什么用 LangGraph、FastMCP、SQLite、Loguru？另外，如果要把这个 Agent 封装成 FastAPI 服务对外提供 API，你会怎么设计接口？",
+          "answer_points": [
+            "画出三层架构：知识层（FAISS 向量库）、Agent 层（LangGraph 编排）、工具层（3 个 stdio MCP Server：resume/job/document）",
+            "说明技术选型理由：FAISS 本地轻量、适合原型与实习项目规模；Qdrant/Pinecone 适合大规模分布式生产场景，体现对岗位 RAG 组件要求的认知",
+            "解释 SQLite（持久化投递记录/岗位）、Loguru（日志）在项目中的定位，并提及 Python、LangChain、LangGraph、FastMCP 构成技术栈",
+            "给出 FastAPI 封装思路：用 Pydantic 定义请求/响应模型（输入岗位 JD、输出匹配报告），把 Agent 调用包成异步接口对外提供，体现全栈视角"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 165.571
+    },
+    {
+      "id": "real-10",
+      "kind": "real",
+      "source_title": "AI/LLM Engineering Intern - Mercura",
+      "source_url": "https://jobs.ashbyhq.com/mercura/24a9e5dc-384c-4351-a208-4b2a961d1d23/",
+      "source_case": null,
+      "jd": "Mercura 招聘 AI/LLM 工程实习生，端到端建设 Agentic AI 系统，开发 RAG、混合搜索和结构化检索，并构建评测、监控与反馈循环；岗位要求 Python，FastAPI 为加分项。",
+      "expect_skills": [
+        "Python",
+        "RAG",
+        "评测"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "AI/LLM 工程实习生",
+        "company": "未识别公司",
+        "requirements": [
+          "Python",
+          "FastAPI（加分项）",
+          "端到端建设 Agentic AI 系统",
+          "开发 RAG 检索增强生成",
+          "混合搜索与结构化检索",
+          "构建评测、监控与反馈循环"
+        ],
+        "keywords": [
+          "AI 实习",
+          "LLM 实习",
+          "Agentic AI",
+          "RAG",
+          "FastAPI",
+          "Python",
+          "检索增强生成"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 Python 与 LangGraph 端到端建设 Agentic AI 系统（实习求职助手 CareerPilot）：串联岗位分析、经历检索、工具路由、匹配报告、简历要点与面试题生成等节点，并将查简历/记投递/写文档封装为 3 个 stdio MCP Server 独立工具供 Agent 按协议调用，避免逻辑全部写死进单一脚本",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "开发 RAG 检索增强生成：将简历、项目经历、课程笔记等文档切块后经阿里云 DashScope text-embedding-v3 向量化写入本地 FAISS，实现先检索再生成的回答流程，回答可指向 docs/ 原文；首轮高相关结果不足时改写查询并做补充检索与结果去重（Agentic RAG）",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "构建评测、监控与反馈闭环：使用 Pydantic 约束 Agent 结构化输出，记录节点、模型、工具与 RAG 检索日志，并提供 20 例离线评测用例用于验证召回与生成质量",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你的 RAG 项目里检索链路是怎么实现的？从切块、向量化到存储检索，各环节为什么这样设计？如果检索召回效果不好，你会先排查哪里？",
+          "answer_points": [
+            "介绍 CareerPilot 的知识层设计：将简历.md、项目经历.md、课程笔记.md 切块后用 DashScope text-embedding-v3 向量化，写入本地 FAISS",
+            "说明切块策略与向量化参数选择，以及为什么选择 FAISS 作为本地向量库",
+            "说明检索如何保证回答指向 docs/ 原文，避免空泛生成",
+            "可以延伸谈 embedding 本质：把文本映射到向量空间，语义相近距离更近，并解释对检索质量的影响"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "「Agentic RAG」和普通 RAG 的区别是什么？在什么场景下你会触发二次检索（查询改写 + 补充检索），如何保证补充结果不与首轮结果重复？",
+          "answer_points": [
+            "说明什么是 Agentic RAG：第一轮高相关结果不足时改写查询，进行补充检索并对结果去重",
+            "解释查询改写触发条件（如相关度阈值）与改写策略（结合原始问题与已召回片段）",
+            "结合面试岗位强调端到端 Agentic AI 系统经验，说明这与固定单轮 RAG 的差异",
+            "可以给出真实数据或示例：如提问「我有哪些项目经历」时如何召回课程笔记内容并支撑后续 Agent 决策"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "请完整描述 CareerPilot 这个 Agentic AI 系统的架构：LangGraph 如何串联各节点？为什么把工具拆成 MCP Server 而不是直接在 Agent 里写逻辑？",
+          "answer_points": [
+            "介绍三层架构：知识层（向量化与 FAISS 检索）、Agent 层（LangGraph 串联岗位分析、经历检索、工具路由、匹配报告等节点）、工具层（3 个 stdio MCP Server）",
+            "说明 LangGraph 如何编排节点、各节点输入输出如何衔接",
+            "解释 MCP 的作用：把「查简历/记投递/写文档」做成独立工具，Agent 按协议调用而非把逻辑写死在一个脚本里",
+            "强调端到端：从输入岗位 JD 到输出岗位分析、匹配报告、面试题完整工作流"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位要求构建评测、监控与反馈循环。你在 CareerPilot 里做了什么来保证 Agent 输出可靠？这 20 例离线评测你打算如何扩展成持续运行的反馈闭环？",
+          "answer_points": [
+            "介绍可靠性保障手段：使用 Pydantic 约束结构化输出，保证 Agent 返回结果格式可控",
+            "说明日志体系：记录节点、模型、工具调用与 RAG 检索日志，便于问题回溯",
+            "介绍离线评测：20 例离线评测用例，说明评测维度（如召回相关性、输出格式、答案是否指向原文）",
+            "延伸讨论线上监控与反馈闭环：如记录检索失败/低分案例，回流到评测集，形成持续改进循环，契合岗位要求"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "目前你的检索以 FAISS 向量相似度为主。如果要在系统里做「混合搜索 + 结构化检索」（向量 + 关键词 + 元数据过滤），你会怎么设计？FastAPI 在其中的角色是什么？",
+          "answer_points": [
+            "承认当前以 FAISS 向量检索为主，说明已有技术基础（Python、FAISS、文本切块、相似度检索、日志与评测脚本）",
+            "设计混合搜索方案：向量相似度 + 关键词（如 BM25）加权融合，并用结构化元数据过滤（如按文档类型：简历/项目经历/课程笔记）缩小候选集",
+            "说明结构化检索对场景的价值：如「我有哪些项目经历」这类问题可先按 doc_type 过滤再向量检索，提升精度",
+            "结合加分项 FastAPI：说明如何用 FastAPI 将检索与 Agent 能力封装成可观测、可调参的 HTTP 服务，以及当前技能储备与迁移计划"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 181.98
+    },
+    {
+      "id": "variant-01",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-01",
+      "jd": "希望你用检索增强生成技术建设个人资料问答能力，完成语义召回并利用编排框架生成有依据的回答。",
+      "expect_skills": [
+        "检索",
+        "语义",
+        "编排"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "检索增强生成（RAG）技术",
+          "语义召回/语义检索能力",
+          "向量检索与向量数据库应用",
+          "编排框架（如 LangChain、LlamaIndex）",
+          "大模型应用开发",
+          "构建有依据的问答系统"
+        ],
+        "keywords": [
+          "RAG",
+          "检索增强生成",
+          "语义召回",
+          "向量检索",
+          "编排框架",
+          "大模型",
+          "AI Agent",
+          "问答系统"
+        ],
+        "level": "中级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 LangChain/LangGraph 构建检索增强生成（RAG）问答管道：将 PDF 与 Markdown 文档按中文 300–500 字切块，调用阿里云百炼 text-embedding-v3 完成 embedding 并写入本地 FAISS 向量库，实现语义召回与向量检索，检索结果带原文来源，支持有依据的问答。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "以 LangGraph 编排大模型应用全流程（岗位分析、经历检索、工具路由、报告生成等），通过 MCP 协议接入 3 个 stdio Server 作为独立工具，实现 Agent 按协议调用而非逻辑写死。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "构建可靠的大模型问答系统：使用 Pydantic 约束结构化输出，记录节点、模型、工具与 RAG 日志，并沉淀 20 例离线评测用例验证召回与生成质量，确保回答可回溯到 docs/ 原文。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在课程作业中实现过一个最小 RAG 问答小工具，请完整描述从文档加载到生成回答的链路。你如何保证模型的回答是有依据的、而不是凭空编造？",
+          "answer_points": [
+            "说明整体链路：加载课程 PDF 与 Markdown → 按中文 300–500 字切块 → embedding 向量化 → 相似度检索 → 将片段拼入提示词让模型作答",
+            "强调\"先检索再生成\"的设计，回答必须能指向 docs/ 目录中的原文，确保可追溯",
+            "说明切块策略的取舍：中文语义边界、块大小对召回精度的影响",
+            "结合个人职责（build_index.py / retrieve.py）说明索引构建与检索模块的分工",
+            "可以补充后续在生产级项目中将知识层升级为 DashScope text-embedding-v3 + FAISS 的演进"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你使用 DashScope text-embedding-v3 做向量化、FAISS 做向量检索。请解释为什么选择向量检索方案？中文文档在切块和召回上有哪些需要注意的地方？",
+          "answer_points": [
+            "解释 embedding 的本质：把文本映射到向量空间，语义相近的文本距离更近（机器学习导论中关于 embedding 的理解）",
+            "说明选型：使用阿里云百炼 text-embedding-v3，API Key 通过 .env 的 aliQwen-api 管理，避免硬编码",
+            "说明向量库选型：使用本地 FAISS，无需部署独立向量数据库服务，适合个人项目",
+            "说明中文文本的切块实践：300–500 字/块，兼顾语义完整性与检索粒度",
+            "可对比：为什么语义检索优于关键词检索——能召回\"我有哪些项目经历\"这类语义相关而非字面匹配的内容"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的项目用 LangGraph 串联了多个节点并接入 MCP 工具。请讲讲你是如何设计 Agent 的工具路由与编排流程的？为什么选择编排框架而不是把所有逻辑写在一个脚本里？",
+          "answer_points": [
+            "描述 LangGraph 的编排方式：串联岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题生成和岗位保存等节点",
+            "说明 LangChain / LangGraph 在状态传递、节点编排上相比手写脚本的优势",
+            "说明工具层设计：接入 3 个 stdio MCP Server（resume / job / document），分别管理经历查询、投递记录和文档生成",
+            "说明 Agent 不是把逻辑写死在一个脚本里，而是按协议调用独立工具（对应课程笔记中 MCP 的设计理念）",
+            "可提及整体技术栈：Python、LangChain、LangGraph、FastMCP、FAISS、SQLite、Loguru"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的笔记中提到 Agentic RAG：首轮高相关结果不足时改写查询、补充检索并去重。请结合你的项目讲一讲这个多轮检索策略是怎么设计的？",
+          "answer_points": [
+            "说明 Agentic RAG 与基础 RAG 的区别：基础 RAG 单轮检索即生成，Agentic RAG 在首轮高相关结果不足时会改写查询",
+            "结合课程笔记说明改进点：改写查询 → 补充检索 → 对多轮结果做去重，再送入生成",
+            "说明触发条件：第一轮检索结果相关性不足时，而不是每次无脑重检索",
+            "联系实际项目：知识库中简历.md、项目经历.md、课程笔记.md 切块向量化后写入 FAISS，提问应能召回对应片段",
+            "可提及日志与离线评测如何帮助发现检索不足、驱动查询改写策略"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "构建有依据的问答系统，可靠性是关键。你的项目通过 Pydantic、日志和 20 例离线评测来保证质量，请讲讲这套可靠性方案是如何设计的？如果检索结果质量不达标，你会怎么发现和优化？",
+          "answer_points": [
+            "说明可靠性手段：使用 Pydantic 约束结构化输出，保证 Agent 返回结果符合预期 schema",
+            "说明可观测性：记录节点、模型、工具和 RAG 日志（Loguru），便于定位检索失败或生成异常",
+            "说明评测方式：提供 20 例离线评测，验证\"提问能否召回正确片段\"这一核心指标",
+            "说明带来源回答的设计：检索必须返回带来源的真实片段，从机制上杜绝无依据回答",
+            "可强调知识层设计：把简历.md、项目经历.md、课程笔记.md 作为知识源，提问\"我有哪些项目经历\"应召回对应内容，用具体例子佐证评测结果"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 102.532
+    },
+    {
+      "id": "variant-02",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-02",
+      "jd": "岗位需要让语言模型按标准协议使用外部能力，并能够执行带状态的多步决策流程。",
+      "expect_skills": [
+        "协议",
+        "工具",
+        "工作流"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": false,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "熟悉大语言模型原理与应用",
+          "掌握Function Calling/工具调用协议（如OpenAI function calling、MCP等）",
+          "能够设计和实现带状态的多步决策流程",
+          "具备Agent框架（如LangChain、AutoGen等）开发经验",
+          "掌握状态管理与会话上下文维护",
+          "能够按标准协议集成外部能力/API",
+          "具备多步推理与任务编排能力"
+        ],
+        "keywords": [
+          "AI Agent",
+          "LLM Agent",
+          "大模型智能体",
+          "Function Calling",
+          "工具调用",
+          "多步决策",
+          "ReAct",
+          "状态管理"
+        ],
+        "level": "高级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 MCP（Model Context Protocol）将「查简历 / 记投递 / 写文档」封装为独立工具，Agent 按标准协议调用外部能力而非写死脚本逻辑，落实 Function Calling / 工具调用协议工程化能力。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "bullet": "使用 LangGraph 串联岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题与岗位保存等多节点流程，实现带状态的多步决策与任务编排。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "接入 resume / job / document 三个 stdio MCP Server 分别管理经历查询、投递记录与文档生成，并用 Pydantic 约束结构化输出、记录节点/模型/工具/RAG 日志并提供 20 例离线评测，保障 Agent 系统可靠性与可观测性。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你的项目把「查简历/记投递/写文档」做成了 3 个独立的 stdio MCP Server，请讲讲你为什么选择 MCP 协议而不是把所有逻辑写在一个脚本里？这些工具的参数 schema 和调用边界是如何设计的？",
+          "answer_points": [
+            "先说明为什么选 MCP 而不是把逻辑写死：把「查简历/记投递/写文档」独立成工具，Agent 按标准协议发现并调用，职责边界清晰、可复用可扩展",
+            "描述 3 个 stdio MCP Server（resume/job/document）各自的职责划分与工具 schema 设计，强调命名和描述要便于 LLM 理解意图",
+            "说明工具内部如何封装外部数据/API（简历库、投递记录、文档生成），Agent 侧只关心调用协议、不关心实现细节",
+            "对比 OpenAI function calling 与 MCP 的适用场景，并总结标准协议集成外部能力的收益"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你的 CareerPilot Agent 用 LangGraph 串联了岗位分析、经历检索、工具路由等多个环节。请描述这个图的状态流转过程，以及相比普通脚本编排，LangGraph 在处理多步任务编排上的核心优势是什么？",
+          "answer_points": [
+            "描述 LangGraph 将「岗位分析→经历检索→工具路由→匹配报告→简历要点→面试题→岗位保存」串成有向图，每个节点是明确职责的模块",
+            "说明 State 如何在节点间流转，哪些信息（岗位 JD、候选人资料、中间检索结果）被持久化在状态中",
+            "重点讲工具路由节点：它如何根据 LLM 决策把请求分发到 resume/job/document 等 MCP 工具",
+            "对比硬编码脚本编排，强调 LangGraph 在可视化、分支循环、条件路由、调试维护上的优势"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "多步 Agent 最怕状态混乱。你的项目如何在 LangGraph 各节点之间维护状态与会话上下文？当某一步检索结果不足或工具调用失败时，你是如何设计重试/改写策略来保证流程继续走下去的？",
+          "answer_points": [
+            "说明 LangGraph 的 State 如何贯穿全流程，维护原始输入、中间结果与最终输出的完整上下文",
+            "阐述用 Pydantic 约束每个节点的结构化输出，保证状态中数据类型稳定、后续节点可安全消费",
+            "结合日志设计（记录节点、模型、工具、RAG 日志）说明如何回放定位状态异常点，支持多步流程的故障排查",
+            "补充 Agentic RAG 场景：第一轮检索不足时如何触发查询改写和补充检索，体现带状态的条件决策与容错"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的 RAG 系统如何保证回答能指向 docs/ 原文而不是模型凭空编造？请具体讲讲「第一轮高相关结果不足时改写查询并补充检索、结果去重」的触发条件和去重策略。",
+          "answer_points": [
+            "说明 RAG 先检索再生成的基本原则，回答必须能指向 docs/ 里的原文，保证可溯源、可验证",
+            "描述检索链路：文档切块（中文 300-500 字）→ text-embedding-v3 向量化 → 写入本地 FAISS → 相似度检索返回带来源的片段",
+            "重点讲 Agentic RAG：第一轮高相关结果不足时如何改写查询、进行补充检索并对两轮结果去重",
+            "说明检索与生成如何结合：片段拼进提示词让模型作答，同时保留 source 供引用"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "Agent 系统的输出不确定性高，你的项目如何保障可靠性？请讲讲那 20 例离线评测是怎么设计的、评测哪些维度，以及评测结果如何反哺你的 prompt、工具定义和节点流程设计。",
+          "answer_points": [
+            "说明用 Pydantic 约束结构化输出如何降低 Agent 各节点输出解析失败的风险",
+            "阐述全链路日志设计（节点、模型、工具、RAG），说明日志如何支撑多步 Agent 的问题定位与结果回放",
+            "介绍 20 例离线评测的设计：覆盖岗位分析、能力匹配、简历要点、面试题生成等典型场景，以及评测维度（召回相关度、结构合规、内容准确性）",
+            "说明评测失败样例如何反哺改进：调整工具描述、改写触发阈值或节点编排逻辑，形成闭环"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 131.665
+    },
+    {
+      "id": "variant-03",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-03",
+      "jd": "需要编写服务端程序处理业务数据，提供接口并操作关系型数据，代码要使用版本控制管理。",
+      "expect_skills": [
+        "接口",
+        "数据",
+        "版本控制"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "后端开发工程师",
+        "company": "未识别公司",
+        "requirements": [
+          "服务端程序开发",
+          "业务数据处理",
+          "API接口开发",
+          "关系型数据库操作",
+          "版本控制管理"
+        ],
+        "keywords": [
+          "后端开发",
+          "服务端开发",
+          "API接口",
+          "关系型数据库",
+          "版本控制"
+        ],
+        "level": "初级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "使用 Python + FastMCP 独立开发 3 个 stdio MCP Server（resume/job/document），封装经历查询、投递记录管理、文档生成等业务接口供 Agent 按协议调用，实现服务端工具化接口开发。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "基于 SQLite 完成投递记录等业务数据的持久化存储与关系型查询，并接入 Loguru 记录节点、模型、工具及 RAG 运行日志，使用 Pydantic 约束结构化输出，保障数据处理与接口的可靠性。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "使用 Git 进行日常版本控制管理，配合 venv、dotenv 统一管理项目环境与配置，编写日志与简单评测脚本（含 20 例离线评测）保证工程规范与可维护性。",
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "岗位要求会做 API 接口开发。你在 CareerPilot 项目里是如何设计和实现服务端接口/工具的？为什么要用 MCP 协议而不是直接写脚本？",
+          "answer_points": [
+            "以 CareerPilot MCP Agent 为例，说明 API/工具接口是采用 MCP 协议封装的，自建了 3 个 stdio MCP Server（resume/job/document），分别暴露经历查询、投递记录、文档生成能力",
+            "强调接口设计与业务解耦：Agent 按协议调用工具而不是把逻辑写死在一个脚本里（对应课程笔记中 MCP 的设计动机）",
+            "可以补充工具路由层的设计——LangGraph 根据岗位分析结果决定调用哪个工具，体现服务端程序的分层思想",
+            "如有必要，说明如何用 Pydantic 约束接口的输入输出结构，保证调用方和提供方数据契约一致"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位要求熟练操作关系型数据库。你在项目里用到了哪些数据库能力？SQLite 是如何支撑你的投递记录等业务数据的？",
+          "answer_points": [
+            "说明项目使用 SQLite 存储投递记录，SQL 为常用技能，数据库操作不是简单的增删改查而是围绕业务场景设计表结构",
+            "可以联系工具层 job MCP Server 负责「投递记录」的写入与查询，即通过数据库支撑真实业务数据流",
+            "补充工程实践：使用 venv、dotenv 管理环境与配置，避免硬编码数据库连接参数",
+            "若面试官追问，可说明关系型数据库选型逻辑——项目规模小、单机场景下 SQLite 足够，且便于本地开发和评测"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "请以 CareerPilot 为例，介绍一下你设计的服务端程序整体架构和数据流转过程？LangGraph 在你的服务端发挥了什么作用？",
+          "answer_points": [
+            "从服务端程序开发的视角拆解项目架构：知识层（文档切块+向量化）、Agent 层（LangGraph 编排）、工具层（MCP Server）、可靠性层（日志与评测）",
+            "重点讲 Agent 层：用 LangGraph 串联岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题和岗位保存等节点，体现服务端业务编排能力",
+            "讲清楚一次完整请求的调用链：输入 JD → 岗位分析 → 检索个人知识库 → 生成匹配报告 → 保存岗位，展示端到端服务流程设计",
+            "提及技术栈：Python、LangChain、LangGraph、FastMCP，证明具备搭建完整服务端应用的能力"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位要求做业务数据处理。你在项目中是如何把非结构化的简历、笔记文本加工成可被检索和使用的数据的？如何保证数据处理结果准确可靠？",
+          "answer_points": [
+            "说明业务数据处理流程：把简历.md、项目经历.md、课程笔记.md 切块后，用 DashScope text-embedding-v3 向量化，写入本地 FAISS 向量库，实现文本到向量的结构化处理",
+            "强调 RAG 的可靠性设计：回答要能指向 docs/ 原文；第一轮高相关结果不足时改写查询做补充检索和去重（对应课程笔记中 Agentic RAG 要点）",
+            "说明数据质量保障：用 Pydantic 约束结构化输出，记录节点/模型/工具/RAG 日志，并做了 20 例离线评测来验证处理效果",
+            "可对比说明自己理解 embedding 是把文本映射到向量空间、语义相近距离更近，体现对数据处理原理的理解"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "岗位要求掌握版本控制管理。你在 CareerPilot 项目中如何使用 Git 进行版本管理？配合了哪些工程化手段保证项目可维护、可回退？",
+          "answer_points": [
+            "说明 Git 是自己工程实践中的常规技能，用于 CareerPilot 项目的版本控制管理，配合 venv、dotenv、Loguru 形成完整的工程化习惯",
+            "结合可靠性意识：项目里记录了节点、模型、工具和 RAG 日志，并有 20 例离线评测脚本，说明变更管理不只是提交代码，还包括可回滚、可追踪的工程规范",
+            "可以举例说明自己的协作/管理方式：配置文件用 dotenv 管理（如阿里云百炼 API Key 放在 .env），避免敏感信息进版本库",
+            "强调即使项目是个人实习项目，也按正规版本控制流程管理，能快速定位每次功能迭代（如新接入 MCP Server）对应改动"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 160.987
+    },
+    {
+      "id": "variant-04",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-04",
+      "jd": "负责把长文档拆成合适片段，将文本映射为稠密表示，并从本地索引中找出语义接近的内容。",
+      "expect_skills": [
+        "文本",
+        "向量",
+        "索引"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "长文档切分与分块",
+          "文本向量化（稠密表示/Embedding）",
+          "语义相似度检索",
+          "本地向量索引构建与查询"
+        ],
+        "keywords": [
+          "RAG",
+          "向量检索",
+          "语义检索",
+          "Embedding",
+          "文本切分",
+          "向量数据库",
+          "本地索引"
+        ],
+        "level": "中级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "对长文档（课程 PDF、Markdown 笔记）按中文 300–500 字进行切分分块，并使用阿里云百炼 text-embedding-v3 完成文本向量化，构建本地 FAISS 向量索引并支持语义相似度查询。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "实现 build_index.py 与 retrieve.py，完成文档加载→切块→Embedding→相似度检索全流程，保证检索结果可返回带原文来源的真实片段，支撑可溯源的知识库问答。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "基于 RAG 检索增强生成搭建最小问答工具（切块 → embedding → 语义检索 → 结果注入提示词），通过 FAISS 本地索引与 DashScope embedding 实现知识库语义检索能力。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在 RAG 问答小工具中提到“按中文 300–500 字切块”，这个粒度是怎么定出来的？对于课程 PDF 和 Markdown 笔记这类长文档，你在 build_index.py 中如何设计切分逻辑，避免切块破坏语义或漏掉关键信息？",
+          "answer_points": [
+            "说明切块粒度的选择依据：中文 300–500 字既能保持段落语义完整，又不至于因块过大导致 embedding 语义稀释、检索噪声增加",
+            "结合个人职责说明 build_index.py 的切分实现流程：加载文档→预处理→切块→向量化→写索引",
+            "补充如何兼顾长文档（PDF 与 Markdown 笔记）中的标题/层级信息，避免硬切分破坏章节语义",
+            "可延伸说明切块大小与检索召回的取舍，以及如何通过离线评测验证切块效果"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你在项目中用 DashScope 的 text-embedding-v3 做向量化，请讲讲 embedding 的核心原理，以及你在工程上是如何管理 API Key、调用向量化接口并把切块后的文本批量转成向量的？如果线上无法访问外部 API，你会如何保证向量化能力不中断？",
+          "answer_points": [
+            "说明 embedding 模型选型：阿里云百炼 text-embedding-v3，以及 API Key 放在 .env 中通过 aliQwen-api 读取的安全管理方式",
+            "说明文本向量化的作用：把文本映射到向量空间，使相近语义距离更近，为语义检索打基础",
+            "描述 embedding 调用与批量向量化的工程细节（重试、并发、超时、成本控制）",
+            "延伸：如果 API 不可用或需要离线，如何降级（如本地 embedding 模型），体现对生产可用性的思考"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你负责实现 retrieve.py，请描述一次完整查询从“提问”到“拿到带来源片段”的检索链路。当第一轮检索结果相关性不足时，你在笔记里提到的 Agentic RAG 是如何改写查询、补充检索并做结果去重的？",
+          "answer_points": [
+            "结合个人职责描述 retrieve.py 的检索流程：query 向量化→与本地索引做相似度计算→按 TopK 返回相关片段",
+            "强调检索结果必须带来源：能指向 docs/ 里的原文，回答可溯源",
+            "引出 Agentic RAG：第一轮高相关结果不足时改写查询（Rewrite Query）进行补充检索，并对多轮结果做去重合并",
+            "补充相似度算法选择（如余弦相似度）、阈值设置与排序策略，体现中级水平的工程细节"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你的知识层用 FAISS 构建本地向量索引，请讲讲索引从构建到查询的完整流程：为什么选用 FAISS 而不是直接部署向量数据库？本地索引如何持久化、如何更新，以及你怎么验证“提问‘我有哪些项目经历’能召回对应内容”这类查询效果？",
+          "answer_points": [
+            "说明本地向量索引的构建与查询流程：切块→embedding→写入 FAISS，查询时加载索引做相似度检索",
+            "说明为什么选 FAISS 而不是 MySQL/ES/专用向量数据库：满足本地索引、轻量、内存/磁盘检索性能需求，符合项目规模",
+            "描述索引的持久化与加载方式（本地文件），以及新增/更新文档时如何增量重建索引",
+            "结合“提问‘我有哪些项目经历’时应能召回本段内容”的例子，说明查询验证与索引质量检查"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "在 CareerPilot 这个 Agent + RAG 项目中，向量检索出的片段是怎样被 Agent 层（LangGraph）消费并生成最终匹配报告的？为保证检索和生成结果可靠，你用了哪些手段（Pydantic、日志、离线评测等），它们分别解决了什么问题？",
+          "answer_points": [
+            "描述 CareerPilot 整体分层：知识层（切块→text-embedding-v3 向量化→FAISS）→Agent 层（LangGraph 串联岗位分析、经历检索、工具路由等）→工具层（3 个 stdio MCP Server）",
+            "说明 RAG 检索片段如何被喂给 Agent 供模型作答，以及检索结果如何参与匹配报告、简历要点等下游任务",
+            "强调可靠性手段：Pydantic 约束结构化输出、记录节点/模型/工具/RAG 日志、20 例离线评测",
+            "延伸说明日志与评测如何帮助定位检索失败/幻觉问题，体现对 RAG 生产质量的关注"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 119.402
+    },
+    {
+      "id": "variant-05",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-05",
+      "jd": "将校园业务表格中的重复记录合并，按类别整理数据，并通过命令行脚本输出清单。",
+      "expect_skills": [
+        "表格",
+        "去重",
+        "脚本"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "能够合并重复记录",
+          "能够按类别整理数据",
+          "能够编写命令行脚本",
+          "熟悉表格数据处理"
+        ],
+        "keywords": [
+          "数据处理",
+          "数据去重",
+          "数据整理",
+          "命令行脚本",
+          "表格处理"
+        ],
+        "level": "初级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "独立实现 build_index.py 与 retrieve.py 等 Python 命令行脚本，负责整理知识库文档、按来源组织数据并构建索引，保证检索结果可返回带来源的真实片段。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "处理课程 PDF 与 Markdown 笔记数据，按中文 300–500 字切块并校验切块边界，避免片段被拆得过碎或重复，保证向量检索结果完整、可追溯。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "使用 SQLite 设计投递记录表（公司、岗位、状态、时间等字段），掌握关系模型、主键外键与 SQL 查询，能独立完成小型 Web 服务与数据处理脚本。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在课程作业的 RAG 小工具里负责文档切块和检索，过程中一定遇到过内容相近甚至重复的片段。请讲讲你如何避免切块造成重复、保证检索返回真实且不冗余的片段？如果把这个思路用到一张含重复记录的表格上（如重复的公司+岗位条目），你会怎么合并？",
+          "answer_points": [
+            "介绍课程作业 RAG 工具中中文 300-500 字切块的策略，说明如何设定切块边界以保证一段经历不被拆得过碎，从而避免检索结果出现大量内容重复的碎片",
+            "结合 FAISS 向量检索与相似度计算，说明如何通过相似度阈值判断两个片段或两条记录是否重复，并在去重时保留更完整/更新的一条",
+            "把去重经验迁移到表格数据：说明按主键/唯一键去重、按字段相似度合并重复记录（如公司+岗位组合）的具体做法",
+            "强调实现 build_index.py / retrieve.py 时对数据质量（无重复、来源可追溯）的重视"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "CareerPilot 计划用 SQLite 存投递记录（公司、岗位、状态、时间），而知识库文档也需要整理归类。请说说你会如何按类别组织这些数据，让后续既能按公司/状态分类查看，又能按类别检索？",
+          "answer_points": [
+            "说明你在 CareerPilot 中按文档类型（项目经历、简历、课程笔记等）分类组织知识库，并分别建立索引，方便按类别检索",
+            "结合课程笔记中 SQLite 的设计：按公司、岗位、状态、时间字段建表，说明如何按类别（状态/公司）对投递记录分组整理",
+            "说明按类别整理后如何支持后续统计与检索，例如按状态汇总、按类别过滤查询",
+            "体现初级岗位所需的表结构与字段设计的清晰逻辑"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你实现了 build_index.py 和 retrieve.py 两个命令行脚本，请介绍它们的输入输出设计。现在要求你写一个命令行脚本，输入一份含重复记录的表格，输出去重并分类整理后的结果，你会如何设计这个脚本的流程与参数？",
+          "answer_points": [
+            "描述 build_index.py 与 retrieve.py 这两个命令行脚本的职责、输入参数与输出结果，体现对命令行脚本设计（参数解析、执行流程）的熟悉",
+            "说明用 Python 编写脚本时如何做到可复用、可维护，例如把构建索引与检索拆成独立模块，并用 Loguru 记录日志",
+            "现场展示设计一个数据整理类命令行脚本的骨架：读取数据文件→去重→按类别输出，说明每一步的命令行参数与输出文件格式",
+            "强调脚本化能自动化重复性数据处理工作，减少手工操作"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "简历中提到你能用 Python 独立完成数据处理脚本。请举一个你实际处理表格数据的例子，说明你如何读取、清洗、去重并按类别整理数据，以及你如何验证处理后的结果没有问题？",
+          "answer_points": [
+            "结合简历中「能独立完成小型 Web 服务与数据处理脚本」的表述，举一个具体用 Python 处理表格数据的例子（如加载、清洗、字段提取、按类别汇总）",
+            "说明在 RAG 中加载课程 PDF 与 Markdown 笔记后如何做文本预处理（切块、去空白、结构化），这也是表格/文本数据整理的一种体现",
+            "提到常用的表格处理手段：按行读入、按列处理、去重、分组统计，并说明如何校验处理结果正确性",
+            "展示对 pandas/openpyxl 等表格处理工具或纯 Python 实现的理解"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        },
+        {
+          "question": "综合来看，这份岗位要求「合并重复记录、按类别整理数据、编写命令行脚本、熟悉表格处理」。假设给你一份几十行、含重复公司岗位的表格，请描述你从读取到输出完整结果的技术方案，并说明这与你在 CareerPilot 中构建索引和用 SQLite 存记录的思路有哪些相通之处？",
+          "answer_points": [
+            "给出完整方案：读取表格→识别重复字段（如公司+岗位）→去重合并→按类别分组→输出整理后的结果，并说明每步的数据结构选择",
+            "对比 CareerPilot 中知识库检索的经验：去重合并更强调字段精确匹配与相似度兜底，而检索强调向量相似度；说明两种场景下「重复」的定义差异",
+            "说明数据整理的产物如何复用：整理后的干净数据可以存入 SQLite 供后续查询，与项目里 FAISS/SQLite 存储的思路一致",
+            "体现初级岗位要求的工程化思考：脚本可复跑、结果可校验、处理过程有日志"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "elapsed_seconds": 172.94
+    },
+    {
+      "id": "variant-06",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-06",
+      "jd": "研究文字内容的数值化表示，使含义相近的句子在表示空间中距离更近，并验证匹配效果。",
+      "expect_skills": [
+        "文本",
+        "向量",
+        "相似"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "熟悉自然语言处理（NLP）基础理论与常见任务",
+          "掌握文本/句子向量表示学习与嵌入模型（如 Sentence-BERT、预训练语言模型）",
+          "理解语义相似度计算与匹配算法",
+          "具备深度学习模型训练、调优与评估能力",
+          "能设计实验方案并验证语义匹配效果（如召回率、准确率等指标）"
+        ],
+        "keywords": [
+          "自然语言处理",
+          "文本向量化",
+          "句子嵌入",
+          "语义相似度",
+          "语义匹配",
+          "表示学习"
+        ],
+        "level": "高级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "理解自然语言处理与表示学习核心理论：掌握 embedding 将文本映射到向量空间、语义相近则向量距离更近的原理，并熟练应用预训练文本向量模型（阿里云百炼 text-embedding-v3）完成句子/文本向量化。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "bullet": "构建基于向量化的语义相似度检索与匹配管线：实现 `build_index.py` 与 `retrieve.py`，按 300–500 字对中文文档切块后做 embedding 与相似度检索，保证 RAG 问答可召回并返回带来源的真实片段。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "设计并验证文本切块与语义匹配效果：通过对比实验总结切块过短丢上下文、过长引入噪声的规律，确定中文场景 overlap 约 50 字较稳，落地为 `RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50)`，优化检索召回与匹配准确性。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在课程作业 RAG 小工具里负责 build_index.py 和 retrieve.py，请具体讲讲文本向量化的做法：用了什么嵌入模型？索引构建和相似度检索的完整流程是怎样的？",
+          "answer_points": [
+            "说明嵌入模型选择：课程作业中直接调用阿里云百炼 text-embedding-v3 生成向量，先讲清楚 embedding 是把文本映射到向量空间这一基本理解",
+            "梳理索引构建流程：加载 PDF/Markdown → 按中文 300–500 字切块 → 对每块生成 embedding → 存入 FAISS 本地向量库",
+            "梳理检索流程：查询向量化后在 FAISS 中做相似度检索，返回 Top-K 片段，保证结果能回溯到带来源的真实文档片段",
+            "强调工程约束：检索必须返回带来源的真实片段，避免模型幻觉或空泛回答"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的笔记里提到『理解 embedding 是把文本映射到向量，语义相近则距离更近』，请解释一下为什么向量相似度能代表语义相似度，以及这种表示在语义匹配任务中的边界在哪里？",
+          "answer_points": [
+            "用自己的话复述 embedding 概念：把文本映射为稠密向量，语义相近的文本在向量空间中距离更近",
+            "解释向量相似度（如余弦相似度）为何能近似语义相似度：编码后语义特征落在相近区域，从而可用距离度量语义关系",
+            "指出局限与边界：预训练模型对一词多义、上下文、领域词汇的处理差异，说明为什么需要根据任务选择合适的嵌入模型甚至微调",
+            "结合 RAG 场景说明向量检索只是召回层，最终质量还要结合阈值控制或重排来保证"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "语义匹配效果需要实验验证。你在项目里用什么方式评估切块与检索质量？『中文场景 300–500 字切块、overlap 约 50 字较稳』这个结论是怎么得出的？如果要用量化指标（如准确率、召回率）验证，你会怎么设计？",
+          "answer_points": [
+            "说明现有评估手段：个人知识库检索结果必须能指向 docs/ 里的原文，配合日志与简单评测脚本验证切块和检索质量",
+            "总结切块经验：切块过短会丢上下文、过长会引入噪声，中文场景 overlap 约 50 字较稳",
+            "给出落地参数：CareerPilot 中使用 RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50)",
+            "扩展到语义匹配指标：说明如何用准确率、召回率等指标衡量检索质量，以及为什么语义匹配要先保证召回再谈准确"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "语义匹配的第一步是保证召回。你的笔记里提到 Agentic RAG：首轮高相关结果不足时改写查询、补充检索并去重，请结合 CareerPilot 里『查简历 / 记投递 / 写文档』的工具化实践，讲讲你是怎么提高检索召回率的？",
+          "answer_points": [
+            "介绍 Agentic RAG 思路：第一轮高相关结果不足时改写查询，进行补充检索和结果去重，从而提升召回",
+            "结合 CareerPilot 实践：把『查简历 / 记投递 / 写文档』做成 MCP 工具，由 Agent 按协议调用，而不是把逻辑写死在一个脚本里",
+            "说明查询改写为何能提升匹配：不同表述映射到同一语义，改写后能命中更多相关片段",
+            "补充工程手段：FAISS 本地向量库 + LangChain/LangGraph 编排，用日志与简单评测脚本验证改写前后效果差异"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "你在 CareerPilot 里已经做了『输入 JD → 岗位分析 → 经历匹配』的任务。如果要把这套语义匹配能力做得更严谨，你会怎么设计实验来验证匹配效果（召回率、准确率等指标）？有哪些因素你会做对照实验？",
+          "answer_points": [
+            "描述 CareerPilot 实习任务：输入岗位 JD 后完成岗位分析、经历匹配、简历改写与面试题生成，个人知识库存放简历、项目经历与课程笔记，检索结果作为回答依据",
+            "设计实验方案：构造带标注的 JD–经历配对数据集，用准确率、召回率、F1 等指标评估语义匹配效果",
+            "控制变量：分别验证切块策略、嵌入模型、相似度阈值对匹配效果的影响，必要时做少量参数调优",
+            "说明落地约束：在本地 FAISS 向量库 + 个人知识库规模下，如何设计可复现的评测脚本，避免靠主观感觉判断匹配质量"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 160.597
+    },
+    {
+      "id": "variant-07",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-07",
+      "jd": "提升AI流水线的可靠性，需要记录每一步执行轨迹，对失败进行兜底，并用测试样例衡量输出质量。",
+      "expect_skills": [
+        "日志",
+        "容错",
+        "评测"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "熟悉AI流水线架构与执行流程",
+          "具备可观测性设计能力，能记录每一步执行轨迹",
+          "具备容错与失败兜底机制设计能力",
+          "能够设计测试样例评估模型输出质量",
+          "具备系统性提升流水线可靠性的工程经验"
+        ],
+        "keywords": [
+          "AI流水线",
+          "可靠性",
+          "可观测性",
+          "执行轨迹追踪",
+          "容错兜底",
+          "测试样例",
+          "输出质量评估"
+        ],
+        "level": "中级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 LangGraph 搭建并执行 AI 流水线，串联岗位分析、经历检索、工具路由与报告生成等节点，把控各阶段输入输出与执行流程。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "为流水线设计可观测性与容错机制：记录节点、模型、工具与 RAG 日志实现执行轨迹追踪，并用 Pydantic 约束结构化输出作为失败兜底，系统性提升可靠性。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "设计并维护 20 例离线评测样例，对模型输出质量进行系统评估与回归验证，保障流水线输出稳定可控。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你在 CareerPilot 中构建的 AI 流水线是分层架构，请具体讲一下 LangGraph 是如何编排这条流水线的执行流程的？每个层之间如何协作？",
+          "answer_points": [
+            "按三层架构描述CareerPilot：知识层（简历.md/项目经历.md/课程笔记.md 切块后用 DashScope text-embedding-v3 向量化写入 FAISS）、Agent 层（LangGraph 串联岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题、岗位保存）、工具层（3 个 stdio MCP Server：resume/job/document）",
+            "说明 LangGraph 以节点-边-状态图的方式定义执行流程，每个节点只做单一职责，节点间通过共享状态传递数据",
+            "讲清一次完整调用从岗位分析到面试题生成的流转路径，以及为何选择 LangGraph（可控的分支与状态管理）而非自由链式调用",
+            "结合自身对流水线执行顺序、失败中断的理解，说明状态编排对整条流水线可维护性的意义"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位要求能记录每一步执行轨迹。你在 CareerPilot 里用 Loguru 记录节点、模型、工具和 RAG 四类日志，请讲讲这套可观测性设计具体是怎么做的，如何用它定位一次失败？",
+          "answer_points": [
+            "说明可观测性设计目标：任何一次执行都能还原出每一步发生了什么",
+            "介绍具体落地：用 Loguru 做日志记录，并按节点、模型调用、工具调用、RAG 检索四类分别埋点，覆盖执行轨迹的关键环节",
+            "举例说明一次匹配报告生成过程中，如何从日志里定位是哪个节点耗时、哪次工具调用失败、哪个模型输出异常",
+            "说明轨迹数据对后续排查、重放和评测的帮助，体现不只是『打日志』而是系统性可观测"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "AI 流水线中 LLM 输出不可控是可靠性最大隐患。你在 CareerPilot 里用 Pydantic 约束结构化输出，请讲讲这套容错与兜底机制是如何设计的？",
+          "answer_points": [
+            "说明为什么必须约束结构化输出：LLM 输出不稳定，直接解析 JSON 易出现字段缺失、格式错误，导致下游节点崩溃",
+            "介绍 Pydantic 约束的具体做法：定义输出 schema，模型输出经校验后再进入下一节点，不合法即触发兜底",
+            "结合实例说明失败兜底策略：重试、回退默认值、跳过该节点或终止流水线并告警，避免整条流水线静默产出脏数据",
+            "从工程角度说明兜底机制如何降低 Agent 在无人值守时的失控风险"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位要求能设计测试样例评估模型输出质量。你在 CareerPilot 中提供了 20 例离线评测，请讲讲这些评测样例是怎么设计的、评测哪些维度、如何利用评测结果提升流水线质量？",
+          "answer_points": [
+            "介绍离线评测集的设计：20 例覆盖不同岗位输入与对应预期输出，先明确『什么是好输出』的评判标准",
+            "说明评测维度：经历检索是否召回正确片段、匹配报告关键字段是否齐全、结构化输出是否符合 schema、语义是否贴合岗位要求",
+            "说明评测执行方式：离线批量跑流水线，将输出与预期结果对比，量化通过率并定位薄弱环节",
+            "强调评测对迭代的价值：把模型或提示词改动的影响量化，避免改坏已有能力，体现『用数据驱动可靠性』的工程思路"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "提升流水线可靠性不只是加日志和重试。请结合你在课程笔记里对切块边界和 SQLite 持久化的思考，谈谈从数据层到执行层，你有哪些系统性提升可靠性的工程经验？",
+          "answer_points": [
+            "从切块策略讲 RAG 可靠性：切块过碎会把一段完整经历拆散导致召回语义残缺，课程笔记里特别强调『切块边界要保证一段经历不被拆得过碎』，这是检索质量的前置保障",
+            "对比向量相似度检索与倒排索引的取舍，说明如何选择匹配方式保证召回准确率",
+            "讲持久化与状态恢复：用 SQLite 存投递记录（公司、岗位、状态、时间），知识库用 FAISS 文件，保证执行中间状态可追溯、可恢复",
+            "总结系统性提升可靠性的方法论：数据质量（切块）→ 检索质量（向量匹配）→ 输出质量（schema 校验）→ 状态可恢复（持久化），形成闭环"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "elapsed_seconds": 134.301
+    },
+    {
+      "id": "variant-08",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-08",
+      "jd": "快速制作一个可交互的求职助手演示页面，让用户提交岗位描述并查看模型生成结果。",
+      "expect_skills": [
+        "交互",
+        "页面",
+        "模型"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "交互式页面开发",
+          "前端开发能力",
+          "用户输入表单处理",
+          "接入AI模型并调用接口",
+          "结果展示与渲染"
+        ],
+        "keywords": [
+          "求职助手",
+          "演示页面",
+          "交互",
+          "模型生成",
+          "AI应用"
+        ],
+        "level": "初级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "参与开发求职助手 CareerPilot MCP Agent：支持用户输入岗位 JD 与候选人资料，按固定工作流自动输出岗位分析、能力匹配、定制简历要点与面试题，打通从用户输入到结构化结果输出的完整 AI 应用链路。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "搭建 RAG 知识检索层：将简历、项目经历等文档切块后调用阿里云百炼 text-embedding-v3 模型接口完成向量化并写入本地 FAISS，实现按语义检索精准召回相关经历内容。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "掌握 RAG 与 Agentic RAG 实现：理解 embedding 将文本映射到向量空间、语义相近距离更近的原理，并掌握查询改写、补充检索与结果去重等策略；熟悉通过 MCP 协议把查询、记录、文档生成能力封装为独立工具接口供 AI 模型调用。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你的 CareerPilot 项目是输入岗位 JD 和候选人资料、按固定工作流输出分析的求职助手。如果要为它开发一个交互式演示页面，你会如何设计用户输入表单（JD + 候选人资料）以及表单的校验与提交交互？",
+          "answer_points": [
+            "说明表单核心字段设计：岗位 JD（文本粘贴/文本域）与候选人资料（文本粘贴或文件上传），字段少、层级清晰",
+            "描述交互状态处理：必填/格式校验、提交时禁用按钮与 loading 提示、失败时的错误提示",
+            "结合项目固定工作流说明提交后如何触发后台 agent 流程，形成『粘贴 JD → 得到分析』的闭环体验",
+            "强调演示页面的目标：让面试官快速理解求职助手的产品形态"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "项目里你通过 LangGraph 串联岗位分析、经历检索、工具路由等节点，并把『查简历/记投递/写文档』做成 MCP 工具。如果前端页面要调用这样一个 agent 服务，接口层你会如何设计？",
+          "answer_points": [
+            "说明 agent 服务对外暴露 HTTP API，接收表单输入并返回结构化结果，前端不直接感知内部细节",
+            "说明工具层通过 stdio MCP Server 实现（查简历/记投递/写文档），前端经后端服务转发，不直接对接 MCP 协议",
+            "强调用 Pydantic 约束结构化输出，前后端契约清晰、schema 稳定",
+            "描述调用 AI 模型的链路：大模型生成 + text-embedding-v3 向量化 + FAISS 检索，接口异常时如何降级返回"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "CareerPilot 会输出岗位分析、能力匹配、定制简历要点和面试题等多类结果。在演示页面里，你会如何设计和渲染这些『模型生成』的结果，让用户直观理解 AI 应用的价值？",
+          "answer_points": [
+            "按模块分区渲染：岗位分析、能力匹配、定制简历要点、面试题各自独立卡片或区块",
+            "说明结果结构来自 Pydantic 约束，前端按固定 schema 渲染，避免直接把 JSON 抛给用户",
+            "展示模型生成效果：支持 Markdown 渲染、关键结论高亮、结果可复制或导出",
+            "处理长文本/多步骤输出的用户体验，例如按工作流阶段分步展示生成过程"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的知识层用 text-embedding-v3 把简历、项目经历切块向量化存入 FAISS，且要求回答能指向 docs 原文。如果页面要展示『我有哪些项目经历』这类检索问答，你会如何呈现检索来源与引用？",
+          "answer_points": [
+            "说明 RAG 流程：将简历、项目经历切块后经 text-embedding-v3 向量化写入 FAISS，检索后再由大模型生成回答",
+            "说明页面应展示检索来源：引用 docs 原文路径并高亮，体现『基于你的资料生成』的可信度",
+            "提到 Agentic RAG：首轮高相关结果不足时改写查询、补充检索并去重，保证答案准确",
+            "以『我有哪些项目经历』为例，说明前端如何展示召回结果与引用出处"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "作为 AI 应用方向，演示页面不仅要交互流畅，还要稳定可调试。你在项目中记录了节点、模型、工具和 RAG 日志，并提供 20 例离线评测——这些可靠性设计对前端联调有什么帮助？你会怎样配合做前后端联调？",
+          "answer_points": [
+            "说明可靠性设计：记录节点、模型、工具和 RAG 日志，联调时可定位问题出在页面、agent 链路还是模型调用",
+            "说明 20 例离线评测保障核心输出质量，前端可依赖稳定的结构化结果做渲染",
+            "给出前端联调手段：浏览器 Network/Console 排查、后端日志按请求 ID 关联、统一错误码与重试机制",
+            "强调 Pydantic 结构化输出让前后端契约一致，减少解析异常；可结合课程笔记中的 RAG/Agent 原理说明排查思路"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 120.021
+    },
+    {
+      "id": "variant-09",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-09",
+      "jd": "为岗位跟踪功能设计轻量级本地存储，支持保存、筛选和更新申请状态。",
+      "expect_skills": [
+        "存储",
+        "筛选",
+        "状态"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/简历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/简历.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "轻量级本地存储设计",
+          "数据保存能力",
+          "数据筛选能力",
+          "申请状态更新能力",
+          "岗位跟踪功能开发"
+        ],
+        "keywords": [
+          "AI Agent",
+          "岗位跟踪",
+          "轻量级本地存储",
+          "数据保存",
+          "数据筛选",
+          "状态更新"
+        ],
+        "level": "中级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "设计轻量级本地存储方案，基于 FAISS 将简历、项目经历与课程笔记切块向量化后写入本地库，实现数据本地保存并支持按语义相似度快速筛选召回真实片段。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "使用 LangGraph 搭建岗位跟踪 Agent，接入 resume / job / document 三个 stdio MCP Server 统一管理经历查询与投递记录，实现岗位数据保存与申请状态更新功能。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "构建数据可靠性保障机制，用 Pydantic 约束结构化输出并记录节点、模型、工具与 RAG 日志，配套 20 例离线评测，确保岗位跟踪数据读写与筛选的准确稳定。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "CareerPilot 中岗位跟踪和投递记录这类数据，你是如何设计轻量级本地存储的？为什么不用数据库？",
+          "answer_points": [
+            "说明 CareerPilot 中岗位跟踪/投递数据的存储选型：优先轻量级本地方案而非重数据库，因为工具是单机实习助手、数据量小",
+            "结合真实实现：知识层用 FAISS 作为本地向量库存储经历片段向量，投递记录则由 MCP job server 以结构化方式管理",
+            "解释 Pydantic 约束结构化输出如何保证存储数据的字段一致性和可解析性",
+            "补充可靠性手段：记录节点、模型、工具日志，便于排查存储与读取问题"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的 Agent 工作流里，岗位分析和匹配结果这些数据是怎么被保存下来的？如何保证保存后不丢失、可复用？",
+          "answer_points": [
+            "说明数据保存链路：输入岗位 JD 后，LangGraph 工作流串联岗位分析、经历检索、匹配报告、简历要点、面试题生成和岗位保存节点",
+            "岗位保存节点负责将结果以结构化数据落盘，Pydantic 约束输出保证可序列化保存",
+            "经历检索结果基于本地 FAISS 向量库持久化，避免每次重新向量化",
+            "介绍 20 例离线评测脚本，验证数据保存后仍能被正确读取和使用"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "岗位跟踪场景里经常要根据 JD 筛选候选人匹配经历。你在 RAG 检索中是怎么做数据筛选的？",
+          "answer_points": [
+            "说明筛选方案：对简历、项目经历、课程笔记按中文 300–500 字切块，这是针对中文文本设计的切块策略",
+            "使用 DashScope text-embedding-v3 向量化后写入本地 FAISS，通过相似度检索筛出最相关片段",
+            "强调检索结果要求返回带来源的真实片段，保证筛选结果可追溯、不编造",
+            "补充 Agent 层的经历检索节点 + 工具路由，说明筛选逻辑如何融入整体工作流"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "投递记录的状态（如进行中、已笔试、已面试）更新在 MCP 工具层是如何实现的？",
+          "answer_points": [
+            "说明投递记录的管理职责：工具层接入 3 个 stdio MCP Server，其中 job server 专门管理投递记录",
+            "描述 Agent 层通过 LangGraph 工具路由调用 MCP 工具，实现记录的创建、查询与状态更新",
+            "说明状态更新如何通过结构化输出约束，避免出现非预期状态值",
+            "强调日志记录节点、模型、工具调用，可追踪每次状态更新来源"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "如果要在 CareerPilot 上新增\"岗位进展跟踪\"（初筛→笔试→面试→Offer）功能，你会如何设计？",
+          "answer_points": [
+            "基于已有架构提出扩展：在 LangGraph 工作流中新增岗位跟踪节点，复用现有的经历检索与工具路由",
+            "利用 job MCP Server 扩展投递状态字段（初筛/笔试/面试/Offer），用 Pydantic 定义枚举保证状态合法",
+            "将跟踪数据接入现有轻量级本地存储，与已保存岗位记录关联",
+            "沿用 20 例离线评测方法验证新增跟踪功能的可靠性",
+            "结合技能清单说明：LangGraph、FastMCP、FAISS、Pydantic 等能力都直接支撑该功能开发"
+          ],
+          "evidence_source": "knowledge/docs/简历.md"
+        }
+      ],
+      "elapsed_seconds": 114.393
+    },
+    {
+      "id": "variant-10",
+      "kind": "variant",
+      "source_title": null,
+      "source_url": null,
+      "source_case": "real-10",
+      "jd": "生成内容必须能够追溯到候选人的原始材料，需要检测无依据陈述并对输出格式做自动检查。",
+      "expect_skills": [
+        "来源",
+        "幻觉",
+        "格式"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "generated_sources": [
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/课程笔记.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md",
+        "knowledge/docs/项目经历.md"
+      ],
+      "analysis": {
+        "job_title": "未识别岗位",
+        "company": "未识别公司",
+        "requirements": [
+          "生成内容可追溯到候选人的原始材料（内容溯源/引用关联）",
+          "检测无依据陈述（幻觉检测/事实核查）",
+          "对输出格式进行自动检查",
+          "AI Agent 应用开发与集成"
+        ],
+        "keywords": [
+          "AI Agent",
+          "大模型应用",
+          "RAG",
+          "内容溯源",
+          "幻觉检测",
+          "事实核查",
+          "输出格式校验",
+          "招聘分析"
+        ],
+        "level": "中级"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "基于 LangGraph 搭建 AI Agent 工作流，串联岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题等节点，并集成 3 个 stdio MCP Server（resume/job/document），将简历查询、投递记录与文档生成封装为可复用工具，支持 Agent 按协议调用。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "bullet": "实现带内容溯源（引用关联）的 RAG 检索链路：文档按中文 300–500 字切块 → DashScope text-embedding-v3 向量化 → FAISS 相似度检索，确保返回片段均为带来源的真实内容；回答需指向 docs/ 原文以支持事实核查，首轮高相关结果不足时改写查询做补充检索与去重，降低无依据陈述（幻觉）风险。",
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "bullet": "使用 Pydantic 约束结构化输出实现生成格式自动校验，记录节点、模型、工具及 RAG 日志用于追踪，并提供 20 例离线评测对生成结果进行事实核查与可靠性验证。",
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "你提到 RAG 的回答要能指向 docs/ 里的原文。在 CareerPilot 项目中，你具体如何实现生成内容到原始材料的一一对应与溯源？",
+          "answer_points": [
+            "说明 RAG 链路设计：切块→embedding→相似度检索→把片段塞进提示词，模型作答时依赖检索片段而非凭空生成",
+            "强调检索层保证返回的是带来源的真实片段，这是自己实现 retrieve.py 时的核心职责",
+            "引用 Agent 与 RAG 要点：回答要能指向 docs/ 里的原文，否则视为无依据",
+            "可举例：提问「我有哪些项目经历」时能召回项目经历.md 对应内容，展示可追溯闭环"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "当第一轮检索的高相关结果不足时，你的 Agent 如何避免模型基于不足材料编造答案？这与幻觉检测/事实核查有什么关系？",
+          "answer_points": [
+            "说明 Agentic RAG 机制：第一轮高相关结果不足时不硬答，而是改写查询进行补充检索，并对结果去重",
+            "强调这是对幻觉检测的工程化手段——用「再检索」代替「模型猜测」，从源头减少无依据生成",
+            "可结合 retrieve.py 职责，说明检索结果不足时如何通过查询改写提升召回质量并保证片段来自真实文档",
+            "补充：检索召回内容与最终回答强绑定，模型只能基于检索到的真实片段作答"
+          ],
+          "evidence_source": "knowledge/docs/课程笔记.md"
+        },
+        {
+          "question": "项目的可靠性层提到用 Pydantic 约束结构化输出。请讲讲你是如何对 Agent 的输出格式做自动检查的？",
+          "answer_points": [
+            "介绍可靠性层的设计：使用 Pydantic 约束结构化输出，保证 Agent 输出格式可被程序自动校验",
+            "说明日志体系：记录节点、模型、工具和 RAG 日志，便于追溯每次输出是否符合预期",
+            "提到 20 例离线评测，展示对输出格式与质量的自动检查闭环",
+            "可对比没有格式校验的后果：下游岗位分析、匹配报告等节点解析失败，凸显自动检查的价值"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "你的项目把「查简历 / 记投递 / 写文档」做成了独立 MCP 工具。你是如何设计和集成这些 Agent 工具的？",
+          "answer_points": [
+            "说明工具层设计：接入 3 个 stdio MCP Server（resume / job / document），分别负责经历查询、投递记录和文档生成",
+            "强调遵循 MCP 协议由 Agent 按协议调用，而不是把逻辑硬编码在一个脚本里",
+            "说明这种设计带来的好处：工具职责解耦、可独立维护、Agent 通过工具路由灵活编排",
+            "可结合 Agent 层 LangGraph 串联岗位分析、经历检索、工具路由等节点，说明工具集成在工作流中的位置"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        },
+        {
+          "question": "请详细讲讲你的 RAG 检索实现：从文档切块、embedding、FAISS 建索引到 retrieve 返回带来源片段，这一链路是如何支撑内容溯源要求的？",
+          "answer_points": [
+            "讲清楚知识层的实现：把简历.md、项目经历.md、课程笔记.md 切块后用 DashScope text-embedding-v3 向量化，写入本地 FAISS",
+            "结合职责说明 build_index.py 负责建索引、retrieve.py 负责检索，检索结果必须携带真实来源片段",
+            "可补充课程笔记中的细节：embedding 是把文本映射到向量空间，相近语义距离更近，API Key 通过 .env 管理",
+            "说明这一层如何支撑上层 Agent 的溯源与事实核查需求——索引源自真实文档，检索片段即可追溯"
+          ],
+          "evidence_source": "knowledge/docs/项目经历.md"
+        }
+      ],
+      "elapsed_seconds": 149.488
+    }
+  ]
+}

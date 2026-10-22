@@ -1,0 +1,19 @@
+{
+    "mcpServers":{
+        "resume": {
+            "command":"python",
+            "args": ["mcp_servers/resume_server.py"],
+            "transport": "stdio"
+        },
+        "job": {
+            "command":"python",
+            "args": ["mcp_servers/job_server.py"],
+            "transport": "stdio"
+        },
+        "document": {
+            "command":"python",
+            "args": ["mcp_servers/document_server.py"],
+            "transport": "stdio"
+        }
+    }
+}

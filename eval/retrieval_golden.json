@@ -1,0 +1,173 @@
+{
+  "version": "1.0",
+  "created_at": "2026-10-17",
+  "library_size": 29,
+  "note": "Recall@k 标注集。relevant_chunks 是人工标注的『这份 JD 应该召回哪些片段』，编号对应 knowledge/index 中的 chunk 序号。标注依据：JD 明确要求的能力，与片段内容是否真的能作为证据支撑。",
+  "chunk_reference": {
+    "0": "AI应用开发笔记 - Prompt 工程",
+    "1": "AI应用开发笔记 - 工具调用与 Function Calling",
+    "2": "AI应用开发笔记 - 检索增强生成 RAG",
+    "3": "AI应用开发笔记 - 模型选型与成本 + 效果评测",
+    "4": "后端项目实践 - 项目A 课程管理系统 API（开头）",
+    "5": "后端项目实践 - 项目A 接口层/数据层/分层设计",
+    "6": "后端项目实践 - 技术栈 Python/FastAPI/SQLAlchemy/MySQL/Docker",
+    "7": "后端项目实践 - 项目B 数据同步与定时任务（幂等）",
+    "8": "后端项目实践 - 项目C 日志分析与可视化（pandas）",
+    "9": "基础知识笔记 - 操作系统（进程/线程/长任务隔离）",
+    "10": "基础知识笔记 - 计算机网络（HTTP 状态码 / 202）",
+    "11": "基础知识笔记 - 数据库（索引/SQL/事务幂等）+ Linux/Git",
+    "12": "工程化与可靠性笔记 - 标题",
+    "13": "工程化与可靠性笔记 - Docker 容器化要点",
+    "14": "工程化与可靠性笔记 - CI 与离线测试 + 日志打点",
+    "15": "工程化与可靠性笔记 - 重试、退避与超时",
+    "16": "工程化与可靠性笔记 - 评测集设计",
+    "17": "竞赛与课外实践 - 算法竞赛 + 技术博客/开源",
+    "18": "竞赛与课外实践 - 协作沟通 + 求职准备",
+    "19": "简历 - 基本信息（求职意向 / 技术栈）",
+    "20": "简历 - 教育背景",
+    "21": "简历 - 技能清单（Python/SQL/LangChain/FastMCP/FAISS/MCP）",
+    "22": "课程笔记 - 数据结构与算法 + 数据库系统",
+    "23": "课程笔记 - 机器学习导论（embedding）+ Agent 与 RAG 要点",
+    "24": "项目经历 - 项目1 CareerPilot 概述",
+    "25": "项目经历 - 项目1 知识层 + Agent 层 + 工具层 + 可靠性",
+    "26": "项目经历 - 技术栈一行",
+    "27": "项目经历 - 个人职责（build_index/retrieve）+ 项目2 RAG 小工具",
+    "28": "项目经历 - 切块经验 + 项目3 二手书脚本"
+  },
+  "cases": [
+    {
+      "id": "cn-sz-01",
+      "match_level": "high",
+      "source_title": "AI应用开发工程师实习生 - 深圳市智通国际科技创新研究中心",
+      "source_url": "https://www.yingjiesheng.com/job-008-028-282.html",
+      "jd": "参与企业 AI 应用系统核心模块开发，涵盖知识库管理、检索优化、推理逻辑；参与 LLM 在 RAG、Agent 智能体、Function Calling 等方向的应用开发与调优；协助构建并优化行业专业知识库，参与数据处理、向量索引构建、检索效果评测等环节。要求熟悉 LangChain/LlamaIndex，熟悉 SQL 数据库，具备 Python 代码能力。",
+      "keywords": ["LLM", "RAG", "Agent", "Function Calling", "LangChain", "向量索引", "检索评测", "Python"],
+      "relevant_chunks": [1, 2, 3, 23, 25, 27],
+      "chunk_notes": {
+        "1": "JD 明确要求 Function Calling，本段讲工具独立化与调用上限",
+        "2": "JD 要求 RAG 与检索优化，本段讲检索质量判断与查询改写",
+        "3": "JD 要求『检索效果评测』，本段讲单独测检索环节",
+        "23": "embedding 原理 + Agent/RAG 要点，与知识库构建直接相关",
+        "25": "项目1 知识层 FAISS 向量化 + Agent 层 + 20 例评测",
+        "27": "个人职责写了实现 build_index.py 与 retrieve.py"
+      }
+    },
+    {
+      "id": "cn-sz-02",
+      "match_level": "high",
+      "source_title": "AI应用研发实习生 - 千峰技术（深圳南山）",
+      "source_url": "https://www.deizao.net/index/index/shixixq/jobid/268846",
+      "jd": "基于大模型 API 及 LangChain 等框架开发 AI 应用，完成从需求到上线的闭环；搭建和优化 RAG 链路：文档解析、切片、向量化、召回与重排；开发智能体 Agent，处理工具调用、多轮对话与流程编排；负责 Prompt 工程与效果评测，跟踪准确率、响应时间、Token 消耗；配合后端接入业务系统，参与接口设计。要求 Python 熟练，了解异步并发与常见 Web 框架。",
+      "keywords": ["LangChain", "RAG", "Agent", "工具调用", "Prompt工程", "效果评测", "Python", "异步", "接口设计"],
+      "relevant_chunks": [0, 1, 2, 3, 5, 25, 27],
+      "chunk_notes": {
+        "0": "JD 要求 Prompt 工程，本段讲结构化输出与指令写法",
+        "1": "JD 要求 Agent 工具调用与流程编排",
+        "2": "JD 要求 RAG 链路的切片、向量化、召回",
+        "3": "JD 要求跟踪 Token 消耗与效果评测",
+        "5": "JD 提到参与接口设计，本段讲 RESTful 与分层",
+        "25": "项目1 的 Agent 层编排与工具层",
+        "27": "RAG 小工具的完整链路实践"
+      }
+    },
+    {
+      "id": "cn-sz-03",
+      "match_level": "high",
+      "source_title": "AI大模型应用开发（可转正）- 妙客莱音（深圳福田）",
+      "source_url": "https://www.shixiseng.com/intern/inn_aq1s8hruogbk",
+      "jd": "负责设计、开发和落地具备自主规划、决策与执行能力的智能体系统；参与 AI 智能体系统架构设计，负责智能体规划、决策、记忆、工具调用等核心模块的开发与优化；研究和应用检索增强生成（RAG）、向量检索及非结构化文档处理技术，将私域知识库与大模型深度结合。要求深入掌握 LangChain、LangGraph、LlamaIndex 等框架。",
+      "keywords": ["智能体", "Agent架构", "规划决策", "记忆", "工具调用", "RAG", "向量检索", "LangGraph", "知识库"],
+      "relevant_chunks": [1, 2, 21, 23, 24, 25],
+      "chunk_notes": {
+        "1": "工具调用是 JD 列出的核心模块之一",
+        "2": "RAG 与非结构化文档处理",
+        "21": "技能清单含 LangGraph / FAISS，与 JD 框架要求对应",
+        "23": "Agent 与 RAG 要点，含 Agentic RAG",
+        "24": "项目1 概述：岗位分析到面试题的完整工作流",
+        "25": "Agent 层用 LangGraph 串联各节点"
+      }
+    },
+    {
+      "id": "cn-sz-04",
+      "match_level": "high",
+      "source_title": "AI Agent 开发实习生（芯片设计自动化方向）- 敦泰电子（深圳）",
+      "source_url": "https://m.liepin.com/lptjob/85921479",
+      "jd": "参与芯片设计领域 AI Agent 的开发、测试与迭代；搭建 RAG 知识检索能力，处理设计文档、规范、流程资料等工程知识；开发 MCP Server、工具调用接口或 LSP 集成，连接大模型与内部设计工具、脚本及工作流；建立测试与评估方法，检查 Agent 输出的正确性、稳定性和适用范围。要求熟悉 Python，了解大模型 API、Prompt、RAG、Agent 或工具调用。",
+      "keywords": ["AI Agent", "RAG知识检索", "MCP Server", "工具调用", "向量检索", "知识库构建", "工作流编排", "Python", "测试评估"],
+      "relevant_chunks": [1, 2, 21, 23, 25, 27],
+      "chunk_notes": {
+        "1": "JD 核心：工具调用接口开发",
+        "2": "RAG 知识检索与文档处理",
+        "21": "技能清单写明『MCP：自建 Server，stdio 接入 Agent』——直接对应",
+        "23": "Agent 与 RAG 要点，含 MCP 条目",
+        "25": "项目1 工具层接入 3 个 stdio MCP Server",
+        "27": "个人职责：保证检索可返回带来源的真实片段"
+      }
+    },
+    {
+      "id": "cn-online-05",
+      "match_level": "high",
+      "source_title": "agent系统开发工程师 - 实习僧",
+      "source_url": "https://www.shixiseng.com/intern/inn_22y8tyrxejtr",
+      "jd": "参与构建基于 LangGraph / MCP / LlamaIndex 的智能 Agent 应用，负责工作流编排、工具集成及任务执行链路设计；实现文档解析、检索增强（RAG）、向量检索、Prompt 设计；使用 FastAPI 或 Spring Boot 构建大模型应用相关 API 服务，支持异步任务处理和工具调用；使用 MySQL、Redis、MongoDB 完成数据存储与查询优化；参与服务容器化、环境部署与基本 CI/CD 流程，使用 Docker、GitHub Actions。",
+      "keywords": ["LangGraph", "MCP", "RAG", "向量检索", "FastAPI", "异步任务", "MySQL", "Redis", "Docker", "CI/CD"],
+      "relevant_chunks": [1, 5, 6, 10, 13, 14, 25],
+      "chunk_notes": {
+        "1": "工具集成与任务执行链路",
+        "5": "FastAPI + Pydantic + 分层设计，对应 JD 的 API 服务要求",
+        "6": "技术栈 FastAPI / MySQL / Docker，与 JD 直接重合",
+        "10": "202 Accepted 语义，对应 JD 的异步任务处理",
+        "13": "Docker 容器化要点",
+        "14": "CI 与离线测试、日志打点",
+        "25": "项目1 的 LangGraph + MCP 实践"
+      }
+    },
+    {
+      "id": "cn-cd-06",
+      "match_level": "high",
+      "source_title": "AI Agent开发实习生 - 成都武侯区",
+      "source_url": "https://m.quanzhi.com/job/detail/6a91f6d467c5b4892cbb8b31",
+      "jd": "主导 Multi-Agent 工作流设计：任务链、工具调用、对话上下文管理、Action Orchestration；负责 Agent 系统架构设计：模块化、高内聚低耦合、可扩展；构建 RAG 全链路：文档解析、文本切分、Embedding 对比、向量检索与召回效果评估；实现 MCP 协议与工具调用；使用 Python + FastAPI 开发后端；监控 Agent 执行效果，优化任务成功率、响应速度、成本。",
+      "keywords": ["Multi-Agent", "工作流", "工具调用", "MCP协议", "RAG全链路", "Embedding", "向量检索", "FastAPI", "监控", "Python"],
+      "relevant_chunks": [1, 2, 5, 14, 23, 25],
+      "chunk_notes": {
+        "1": "Action Orchestration 与工具调用",
+        "2": "RAG 全链路与召回效果评估",
+        "5": "Python + FastAPI 后端与模块化分层",
+        "14": "日志打点与耗时归因，对应 JD 的监控要求",
+        "23": "Embedding 原理与 Agent/RAG 要点",
+        "25": "Agent 层 LangGraph 串联、工具层 MCP"
+      }
+    },
+    {
+      "id": "cn-jn-07",
+      "match_level": "low",
+      "source_title": "AI Agent 实习生 - 工信人才网（济南）",
+      "source_url": "https://www.miitjob.cn/position/position-detail?enterprise_id=5245&post_id=13477",
+      "jd": "负责 AI Agent 产品设计与开发，参与产品架构搭建、核心功能开发、工具调用链路搭建；负责 AI Agent 工具调用能力建设，落地 Function Call、MCP 等调用机制；参与 RAG 知识库系统搭建与优化；参与 Java 后端服务开发，完成接口设计、业务逻辑开发、数据库交互。要求熟练掌握 Java 技术栈，具备扎实的后端开发基础。",
+      "keywords": ["Java", "Spring", "后端服务", "接口设计", "Function Call", "MCP", "RAG", "提示词工程"],
+      "relevant_chunks": [1, 2, 25],
+      "chunk_notes": {
+        "1": "Function Call / MCP 概念层面命中",
+        "2": "RAG 知识库优化相关",
+        "25": "项目1 的 MCP 工具层实践",
+        "_note": "对照组：JD 主体是 Java 技术栈，候选人材料以 Python 为主，预期召回率明显偏低"
+      }
+    },
+    {
+      "id": "cn-gen-08",
+      "match_level": "low",
+      "source_title": "数据分析实习生（通用岗位，对照组）",
+      "source_url": null,
+      "jd": "负责业务数据的清洗、整理与统计；使用 SQL 从数据仓库取数，产出日报周报；用 Excel / BI 工具做可视化看板；协助完成用户行为分析与 A/B 实验数据支撑。要求熟练 SQL，了解统计学基础，会用一门脚本语言做数据处理。",
+      "keywords": ["SQL", "数据清洗", "报表", "统计分析", "可视化", "Excel", "BI"],
+      "relevant_chunks": [7, 8, 11],
+      "chunk_notes": {
+        "7": "数据同步脚本，用 pandas 做差异比对",
+        "8": "日志分析与可视化报表，pandas + matplotlib",
+        "11": "数据库索引与 SQL",
+        "_note": "对照组：与候选人主攻方向（AI 应用 / 后端）偏离，预期召回率低"
+      }
+    }
+  ]
+}

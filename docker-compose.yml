@@ -1,0 +1,207 @@
+# ============================================================
+# docker-compose.yml —— 一条命令把整件事跑起来
+# ============================================================
+# Dockerfile 负责"怎么把东西装进一个箱子"，
+# compose 负责"这个箱子怎么运行、连什么、存哪"。
+#
+# 用法：
+#   docker compose up -d          # 后台启动
+#   docker compose logs -f        # 看日志
+#   docker compose logs -f worker # 只看 worker
+#   docker compose down           # 停止并移除容器（数据卷保留）
+#
+# 注意：现代 Docker Compose v2 已经不需要写 version 字段，写了反而会有警告。
+
+# ============================================================
+# 共享配置（YAML 锚点）
+# ============================================================
+# api 和 worker 用的是【同一个镜像】，区别只有启动命令不同。
+# 不抽出来的话，两边的环境变量和挂载要各写一份，
+# 改 DB 路径这种小事都得改两处 —— 迟早会漏。
+x-app-common: &app-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+    # 装依赖时用的 pip 源。国内网络觉得慢，就换成镜像地址：
+    #   清华 https://pypi.tuna.tsinghua.edu.cn/simple
+    #   阿里 https://mirrors.aliyun.com/pypi/simple/
+    # 这一项只影响"构建阶段"，不会被写进最终镜像的运行环境。
+    args:
+      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+  image: careerpilot-mcp-agent:0.1.0
+
+  # ---------- 环境变量从哪来 ----------
+  # ⭐️ 这是密钥注入的正确姿势：
+  #   env_file 会在【容器启动时】把 .env 里的变量注进进程环境，
+  #   它们不会出现在任何镜像层里。
+  #
+  #   对比一下错误做法：在 Dockerfile 里 `ENV LLM_API_KEY=xxx` 或 `COPY .env .`
+  #   —— 那等于把密钥永久写进镜像，谁拿到镜像谁就能翻出来。
+  env_file:
+    - .env
+
+  # 不带敏感信息的运行参数，直接写在这里（会覆盖 env_file 里的同名项）
+  environment:
+    TZ: Asia/Shanghai
+    CAREERPILOT_DB_PATH: /app/data/jobs.db
+    CAREERPILOT_OUTPUT_DIR: /app/output
+    # 想把 knowledge/docs/ 换过的资料重新灌进索引时，把下面这行改成 1
+    FORCE_REBUILD_INDEX: "0"
+    # 容器网络里用【服务名】互相访问，写 localhost 是新手最常见的错误
+    REDIS_URL: redis://redis:6379/0
+
+  # ---------- 启动顺序 ----------
+  # 必须带 condition: service_healthy。只写 depends_on 只能保证
+  # 【容器进程起来了】，不保证【Redis 已经能应答】——
+  # 那样第一个请求很可能撞在 Redis 还没 listen 的时刻上。
+  depends_on:
+    redis:
+      condition: service_healthy
+
+  # ---------- 数据持久化 ----------
+  # 为什么需要：容器本身是一次性的，删掉后里面所有文件都消失。
+  #   你的 SQLite 岗位记录、生成的文档、日志、FAISS 索引
+  #   都存在这里列出的卷里，容器重建不会丢。
+  #
+  # 为什么用具名卷（careerpilot-data）而不是直接挂当前目录：
+  #   容器里跑的是 uid=10001 的普通用户。如果直接把宿主机目录挂进去，
+  #   宿主机文件的属主往往对不上，会出现 "Permission denied"。
+  #   具名卷由 Docker 自己管理权限，跨平台都省心。
+  #
+  # 想直接看这些文件：docker volume inspect careerpilot-data
+  volumes:
+    - careerpilot-data:/app/data        # SQLite 岗位记录
+    - careerpilot-output:/app/output    # 生成的 Markdown 文档
+    - careerpilot-logs:/app/logs        # 日志
+    - careerpilot-index:/app/knowledge/index  # FAISS 向量索引（避免每次重建烧钱）
+
+  # ---------- 重启策略 ----------
+  # unless-stopped：容器崩了自己爬起来；但你手动 docker stop 之后就不再拉起。
+  # 对比 always：连你手动停掉的也会重启，调试时会很烦。
+  restart: unless-stopped
+
+services:
+  # ============================================================
+  # API：接收请求、派发任务、供客户端查询结果
+  # ============================================================
+  api:
+    <<: *app-common
+    container_name: careerpilot-api
+    command:
+      - uvicorn
+      - api.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --workers
+      - "1"
+
+    # ---------- 端口 ----------
+    # "宿主机端口:容器内端口"。
+    # 左边可以改（比如 8001:8000），右边必须和容器里监听的端口一致。
+    ports:
+      - "8000:8000"
+
+    # ---------- 健康检查 ----------
+    # Dockerfile 里已经写了，这里再写是为了让 compose 也能显示 healthy 状态。
+    # test 命中 api/main.py 里那个不带任何依赖的 /health 接口 —— 正好派上用场。
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ============================================================
+  # Worker：常驻消费者，真正跑 Agent 的地方
+  # ============================================================
+  # 为什么要单独一个容器：
+  #   1. 一次分析要 50~120 秒，放在处理 HTTP 的进程里会把请求线程占满，
+  #      连 /health 都响应不了（健康检查失败 → 容器被判定不健康 → 重启，死循环）。
+  #   2. 任务积压时可以直接 `--scale worker=3`，API 那边完全不用动。
+  #
+  # 注意它【不】暴露端口：它是消费者，不该被外部直接访问。
+  worker:
+    <<: *app-common
+    # ⚠️ 这里【故意不设】container_name。
+    #   设了固定名字之后，compose 就无法 --scale worker=3 了（名字冲突直接报错），
+    #   而"队列消费不过来时直接加几个 worker"正是把重活挪出 API 之后最大的收益。
+    #   api 和 redis 不扩容，所以它们保留了固定名字，方便直接 docker logs。
+    command: ["python", "-m", "tasks.worker"]
+
+    # 除了等同级 Redis 就绪，还要等同级 API 健康。
+    # 原因：entrypoint 会在索引不存在时自动构建索引。
+    # 如果 worker 和 api 同时冷启动，两边可能同时去建同一份索引
+    # （既浪费一遍 embedding 的钱，又可能写到一半互相覆盖）。
+    # 等 api 健康 = 索引已经就绪，worker 进来直接跳过构建。
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+    # ---------- 健康检查 ----------
+    # worker 不提供 HTTP 接口，Dockerfile 里那条"检查 8000 端口"的规则
+    # 对它完全无效（会被判定 unhealthy，可它其实活得好好的）。
+    # 这里改成检查 PID 1 依然是 worker 进程 —— 容器里 exec 之后
+    # PID 1 就是 python -m tasks.worker 本身。
+    #
+    # 局限要如实说明：这能发现"进程没了"，发现不了"进程卡死但不退出"。
+    #   后者靠另外两层兜底：任务长时间不完成会被 reclaim_stale 认领走，
+    #   以及客户端侧自己的超时。不要假装一个进程存活检查能覆盖所有故障。
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0 if 'tasks.worker' in open('/proc/1/cmdline').read() else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ============================================================
+  # Redis：任务队列 + 临时状态 + 幂等去重 + 限流
+  # ============================================================
+  # 它在本项目里【不是缓存】，所以下面这几个参数和"当缓存用"时的
+  # 推荐配置是反过来的，每个都是面试会追问的点：
+  #
+  #   --appendonly no / --save ""
+  #       不开任何持久化。这里装的都是"可重算的临时物"：
+  #       任务丢了最多让客户端看到 failed 再提交一次，
+  #       而开 AOF 会让每次入队都刷盘，把内存数据库最大的优势换掉了。
+  #
+  #   --maxmemory-policy noeviction
+  #       内存满时【拒绝写入】而不是淘汰旧数据。
+  #       当缓存用通常推荐 allkeys-lru，但这里不行——
+  #       一条任务被悄悄淘汰掉，等于用户提交后永远等不到结果，
+  #       而且没有任何报错。宁可让它写不进去、客户端立刻感知。
+  redis:
+    image: redis:7-alpine
+    container_name: careerpilot-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "no"
+      - --save
+      - ""
+      - --maxmemory
+      - "256mb"
+      - --maxmemory-policy
+      - "noeviction"
+    # 暴露到宿主机，方便本地脚本直连调试（容器网络里则用服务名 redis）
+    ports:
+      - "6379:6379"
+    healthcheck:
+      # alpine 镜像自带 redis-cli，不需要额外装 curl
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+# ---------- 声明上面用到的卷 ----------
+# 这一节不能少，否则 compose 会报错说不认识这些名字。
+volumes:
+  careerpilot-data:
+  careerpilot-output:
+  careerpilot-logs:
+  careerpilot-index:

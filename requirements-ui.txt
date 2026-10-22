@@ -1,0 +1,15 @@
+# 界面层（Streamlit）专用依赖
+#
+# 为什么单独一个文件，而不是塞进 requirements.txt：
+#   Dockerfile / docker-compose.yml 构建的是 API 镜像，只需要跑 FastAPI + Agent + RAG，
+#   Streamlit 会额外拖进来 pandas / numpy / altair / tornado / pillow 等一大串依赖，
+#   白白把镜像撑大，而且这些都是攻击面。拆开之后：
+#     - API 镜像：docker compose build           -> 只装 requirements.txt
+#     - 界面进程：pip install -r requirements-ui.txt -> 单独跑，通过 HTTP 调 API
+#
+# 这里刻意不写 "-r requirements.txt"：
+#   界面层只用 HTTP 访问 API，不需要 LangGraph / FAISS / MCP 那一坨，
+#   继承过来等于把刚减掉的重量又背回去。
+#
+# 本地起界面：streamlit run ui/app.py（ui/ 目录待建）
+streamlit>=1.40

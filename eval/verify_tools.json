@@ -1,0 +1,137 @@
+{
+  "summary": {
+    "total": 1,
+    "format_passed": 1,
+    "skill_coverage_passed": 1,
+    "citation_passed": 1,
+    "citation_truth_passed": 1,
+    "hallucination_risk_count": 0,
+    "runtime_error_count": 0,
+    "elapsed_seconds": 169.416,
+    "with_tools": true
+  },
+  "results": [
+    {
+      "id": "real-01",
+      "kind": "real",
+      "source_title": "AI & Technical Program Management Intern - AI Fund",
+      "source_url": "https://jobs.lever.co/AIFund/66bd2284-3a9b-4c58-bae1-efc78638ec64",
+      "source_case": null,
+      "jd": "AI Fund 招聘 AI 与技术项目管理实习生，要求理解 LLM、RAG 和 Agent 的应用，能够使用 Python 编写基础脚本，并接触过 LangChain 等生成式 AI 工具。",
+      "expect_skills": [
+        "Python",
+        "RAG",
+        "LangChain"
+      ],
+      "format_ok": true,
+      "skill_coverage_ok": true,
+      "citation_ok": true,
+      "citation_truth_ok": true,
+      "hallucination_risk": false,
+      "placeholder_hit": null,
+      "validation_errors": [],
+      "evidence_sources": [
+        "课程笔记.md",
+        "项目经历.md"
+      ],
+      "generated_sources": [
+        "课程笔记.md",
+        "项目经历.md",
+        "项目经历.md",
+        "课程笔记.md",
+        "项目经历.md",
+        "项目经历.md",
+        "项目经历.md",
+        "课程笔记.md"
+      ],
+      "analysis": {
+        "job_title": "AI 与技术项目管理实习生",
+        "company": "AI Fund",
+        "requirements": [
+          "理解 LLM、RAG 和 Agent 的应用",
+          "能够使用 Python 编写基础脚本",
+          "接触过 LangChain 等生成式 AI 工具"
+        ],
+        "keywords": [
+          "LLM",
+          "RAG",
+          "Agent",
+          "Python",
+          "LangChain",
+          "生成式 AI",
+          "项目管理",
+          "实习生"
+        ],
+        "level": "实习生"
+      },
+      "resume_bullets": [
+        {
+          "bullet": "熟悉 LLM、RAG 与 Agent 的实际应用：理解 embedding 将文本映射到向量空间并据此做检索，掌握先检索再生成的 RAG 流程；实现 Agentic RAG 的低相关结果查询改写、补充检索与去重，并按 MCP 协议将查简历、记投递、写文档封装为独立工具供 Agent 调用。",
+          "evidence_source": "课程笔记.md"
+        },
+        {
+          "bullet": "使用 Python 结合 LangChain / LangGraph 搭建生成式 AI Agent 项目：调用 DashScope text-embedding-v3 对知识文档切块向量化并写入本地 FAISS，串联岗位分析、经历检索、工具路由、匹配报告、简历要点与面试题生成等节点，并接入 3 个 stdio MCP Server。",
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "bullet": "负责实现 build_index.py 与 retrieve.py 等基础脚本，完成中文文档切块、向量化与相似度检索，保证回答可回溯至 docs/ 原文；用 Pydantic 约束结构化输出、记录 RAG 日志，并提供 20 例离线评测验证可靠性。",
+          "evidence_source": "项目经历.md"
+        }
+      ],
+      "interview_questions": [
+        {
+          "question": "请结合你的实践，解释 RAG 的基本原理，并说明 Agentic RAG 相比基础 RAG 解决了什么问题？",
+          "answer_points": [
+            "先讲基础 RAG 流程：先检索再生成，回答要能指向 docs/ 里的原文，而不是模型凭空编造",
+            "解释 embedding 原理：把文本映射到向量空间，语义相近的距离更近，并用过阿里云百炼 text-embedding-v3 做向量化",
+            "说明 Agentic RAG 的差异：当第一轮高相关结果不足时，Agent 会改写查询、做补充检索并对结果去重",
+            "强调对 LLM/RAG/Agent 的理解是你投递该实习的核心契合点"
+          ],
+          "evidence_source": "课程笔记.md"
+        },
+        {
+          "question": "介绍你的 CareerPilotMCPAgent 项目整体架构，Agent 层是如何串联整个流程并体现项目管理思维的？",
+          "answer_points": [
+            "按三层架构阐述：知识层、Agent 层、工具层",
+            "知识层：把简历.md、项目经历.md、课程笔记.md 切块后用 text-embedding-v3 向量化写入本地 FAISS",
+            "Agent 层：用 LangGraph 串联岗位分析、经历检索、工具路由、匹配报告、简历要点、面试题和岗位保存等节点",
+            "工具层：接入 3 个 stdio MCP Server（resume/job/document），分别管理经历查询、投递记录和文档生成",
+            "点出这种模块化分工对应项目管理中的任务拆解与进度可控"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "你负责实现 build_index.py 和 retrieve.py，如何保证检索结果的质量和可溯源？",
+          "answer_points": [
+            "说明个人职责：整理知识库文档、实现索引构建与检索脚本，保证检索返回带来源的真实片段",
+            "讲切块策略：按中文 300-500 字切块，再 embedding 入库，避免切块过大或过小影响召回",
+            "检索时把片段连同来源塞进提示词，让模型作答必须指向原文，防止幻觉",
+            "补充可靠性手段：用 Pydantic 约束结构化输出，记录节点/模型/工具/RAG 日志，并提供 20 例离线评测来验证检索质量"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "你在项目中使用了哪些 Python 生态工具？为什么选择 LangGraph/LangChain 来搭建 Agent？",
+          "answer_points": [
+            "列出技术栈：Python、LangChain、LangGraph、FastMCP、FAISS、SQLite、Loguru",
+            "解释 LangGraph 的价值：把多步骤 Agent 流程节点化编排，状态传递清晰，便于调试和扩展",
+            "说明 LangChain 生态用于与 LLM、embedding、向量库对接",
+            "提到 FastMCP 搭建 MCP Server、FAISS 做本地向量检索、SQLite 存投递记录、Loguru 记日志，体现工程完整性"
+          ],
+          "evidence_source": "项目经历.md"
+        },
+        {
+          "question": "谈谈你对 MCP（Model Context Protocol）的理解，为什么把工具做成独立 Server 而不是把逻辑写死在一个脚本里？",
+          "answer_points": [
+            "用课程笔记中的原话说明：MCP 把「查简历/记投递/写文档」做成独立工具，Agent 按协议调用",
+            "对比两种做法的优劣：写死在一个脚本会导致耦合高、难复用、难扩展",
+            "结合项目实际：通过 stdio MCP Server 接入 resume/job/document 三个工具，分别管理经历查询、投递记录和文档生成",
+            "联系 Agentic RAG 的查询改写与补充检索，说明 Agent 需要按需路由到不同工具"
+          ],
+          "evidence_source": "课程笔记.md"
+        }
+      ],
+      "elapsed_seconds": 169.416
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# 统一换行符：仓库内一律 LF，检出时按平台自动处理
+* text=auto eol=lf
+
+# 二进制文件原样保存
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.faiss binary
+*.pkl binary

@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,14 @@ from agent.schemas import (
     ResumeBulletList,
 )
 from agent.state import State
+
+# Windows 控制台默认 GBK：错误信息里出现 ¥ 这类字符会让 print 抛 UnicodeEncodeError，
+# 进而中断整轮评测并丢掉结果。统一成 UTF-8 + 替换字符。
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 
 CASES: list[dict[str, Any]] = [

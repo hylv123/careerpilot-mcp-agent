@@ -12,7 +12,7 @@ CareerPilot 是一个面向 AI 应用开发实习求职场景的本地 Agent。�
 > 2. 「为什么幂等是正确性要求而不是优化」—— 一次分析有副作用，重复提交会写脏数据
 > 3. 「检索质量评测 Recall@k」—— 指标挖出了一个写了但从未生效过的功能
 >
-> 这是本地个人工具，没有真实用户与线上流量；边界写在文末「已知限制」，迭代记录在 [docs/EVOLUTION.md](docs/EVOLUTION.md)，后续方向在 [docs/ROADMAP.md](docs/ROADMAP.md)。
+> 这是本地个人工具，没有真实用户与线上流量；边界写在文末「已知限制」，迭代记录在 [docs/EVOLUTION.md](docs/EVOLUTION.md)。
 
 ## 项目亮点
 
@@ -395,6 +395,3 @@ python -m unittest discover -s tests -v
 - 评测规模较小，且默认不启用真实 MCP 工具。
 - 相似度阈值与知识库、Embedding 模型相关，迁移数据后应重新校准。
 
-## 面试讲解
-
-项目设计取舍和常见追问见 [`docs/INTERVIEW_GUIDE.md`](docs/INTERVIEW_GUIDE.md)。

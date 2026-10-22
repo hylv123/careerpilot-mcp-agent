@@ -230,6 +230,29 @@ def _format_exception_chain(exc: BaseException) -> str:
     return " <- ".join(parts)
 
 
+# 环境级故障（TLS/连接/超时）与用例本身的失败分开处理：
+# 前者重跑该用例，后者计入质量指标。
+ENV_ERROR_HINTS = (
+    "ssl",
+    "certificate",
+    "connection",
+    "timed out",
+    "timeout",
+    "eof",
+    "reset by peer",
+    "temporarily unavailable",
+    "name resolution",
+)
+ENV_RETRIES = 2
+ENV_RETRY_DELAYS = (5.0, 15.0)
+
+
+def _is_env_error(exc: BaseException) -> bool:
+    """判断异常是否由网络/TLS 这类环境问题引起。"""
+    text = _format_exception_chain(exc).lower()
+    return any(hint in text for hint in ENV_ERROR_HINTS)
+
+
 def evaluate_output(case: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
     """Evaluate one completed graph state without another LLM call."""
     validation_errors: list[str] = []
@@ -350,6 +373,8 @@ def _print_summary(results: list[dict[str, Any]], elapsed_seconds: float) -> Non
 
     risk_count = sum(result.get("hallucination_risk") is True for result in results)
     failed_count = sum("runtime_error" in result for result in results)
+    env_retries = sum(int(result.get("env_retries", 0)) for result in results)
+    env_failed = sum(1 for result in results if result.get("env_error"))
 
     print("\n" + "=" * 64)
     print(f"评测完成：{total} 例，运行异常：{failed_count} 例，耗时：{elapsed_seconds:.1f}s")
@@ -358,6 +383,8 @@ def _print_summary(results: list[dict[str, Any]], elapsed_seconds: float) -> Non
     print(f"引用存在率：{passed('citation_ok')}/{total} ({passed('citation_ok') / total:.1%})")
     print(f"引用真实性：{passed('citation_truth_ok')}/{total} ({passed('citation_truth_ok') / total:.1%})")
     print(f"明显幻觉风险：{risk_count}/{total} ({risk_count / total:.1%})")
+    if env_retries or env_failed:
+        print(f"环境级故障：重跑 {env_retries} 次，重跑后仍失败 {env_failed} 例")
     print("=" * 64)
 
 
@@ -378,34 +405,51 @@ def run_eval(
     for index, case in enumerate(cases, start=1):
         print(f"[{index:02d}/{len(cases):02d}] {case['id']} 开始")
         case_started = time.perf_counter()
-        try:
-            output = app.invoke(_initial_state(case["jd"]))
-            result = evaluate_output(case, output)
-            result["elapsed_seconds"] = round(time.perf_counter() - case_started, 3)
-            print(
-                f"  format={result['format_ok']} "
-                f"citation={result['citation_ok']} "
-                f"truth={result['citation_truth_ok']} "
-                f"risk={result['hallucination_risk']}"
-            )
-        except Exception as exc:
-            result = {
-                "id": case["id"],
-                "kind": case["kind"],
-                "source_title": case.get("source_title"),
-                "source_url": case.get("source_url"),
-                "source_case": case.get("source_case"),
-                "jd": case["jd"],
-                "expect_skills": case["expect_skills"],
-                "format_ok": False,
-                "skill_coverage_ok": False,
-                "citation_ok": False,
-                "citation_truth_ok": False,
-                "hallucination_risk": True,
-                "runtime_error": _format_exception_chain(exc),
-                "elapsed_seconds": round(time.perf_counter() - case_started, 3),
-            }
-            print(f"  ERROR: {result['runtime_error']}")
+        env_retries = 0
+        while True:
+            try:
+                output = app.invoke(_initial_state(case["jd"]))
+                result = evaluate_output(case, output)
+                result["elapsed_seconds"] = round(time.perf_counter() - case_started, 3)
+                if env_retries:
+                    result["env_retries"] = env_retries
+                print(
+                    f"  format={result['format_ok']} "
+                    f"citation={result['citation_ok']} "
+                    f"truth={result['citation_truth_ok']} "
+                    f"risk={result['hallucination_risk']}"
+                )
+                break
+            except Exception as exc:
+                if _is_env_error(exc) and env_retries < ENV_RETRIES:
+                    delay = ENV_RETRY_DELAYS[min(env_retries, len(ENV_RETRY_DELAYS) - 1)]
+                    env_retries += 1
+                    print(
+                        f"  ENV-RETRY {env_retries}/{ENV_RETRIES}: "
+                        f"{type(exc).__name__}，{delay:.0f}s 后重跑该用例"
+                    )
+                    time.sleep(delay)
+                    continue
+                result = {
+                    "id": case["id"],
+                    "kind": case["kind"],
+                    "source_title": case.get("source_title"),
+                    "source_url": case.get("source_url"),
+                    "source_case": case.get("source_case"),
+                    "jd": case["jd"],
+                    "expect_skills": case["expect_skills"],
+                    "format_ok": False,
+                    "skill_coverage_ok": False,
+                    "citation_ok": False,
+                    "citation_truth_ok": False,
+                    "hallucination_risk": True,
+                    "runtime_error": _format_exception_chain(exc),
+                    "env_error": _is_env_error(exc),
+                    "env_retries": env_retries,
+                    "elapsed_seconds": round(time.perf_counter() - case_started, 3),
+                }
+                print(f"  ERROR: {result['runtime_error']}")
+                break
         results.append(result)
 
     elapsed = time.perf_counter() - started
@@ -424,6 +468,8 @@ def run_eval(
                 item.get("hallucination_risk") is True for item in results
             ),
             "runtime_error_count": sum("runtime_error" in item for item in results),
+            "env_error_count": sum(1 for item in results if item.get("env_error")),
+            "env_retry_count": sum(int(item.get("env_retries", 0)) for item in results),
             "elapsed_seconds": round(elapsed, 3),
             "with_tools": with_tools,
         },

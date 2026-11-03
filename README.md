@@ -162,6 +162,15 @@ Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
 2. **距离分数的绝对值不可用**：各岗位 top-4 分数都在 0.61~0.93，但 Recall 从 0.14 到 0.67，因为不同查询的 L2 距离分布不同。
 3. **强制改写（`min_hits=99`）的收益不稳定**：10-17 那轮 Recall@4 从 0.464 升到 0.506、Precision 从 0.656 升到 0.688；11-03 重跑则是 0.464 / 0.656——**与 plain 持平**。原因是改写用的 query 由模型生成（`temperature=0.3`），每次不同，收益落在运行噪声里。所以不能拿单次结果证明"改写有效"。
 
+**那为什么还留着 `retrieve_agentic`？**
+
+它是一个**可配置能力 / Agentic RAG 的演示入口**，不是"已验证有效的优化"：
+
+- 它把"检索质量不足 → 改写 query → 补充检索 → 合并去重"这条链路完整实现并跑得通；
+- 默认阈值（`max_distance=DEFAULT_MAX_DISTANCE`）对当前知识库偏松，所以**默认不触发**——这是参数问题，不是实现问题；
+- 需要时用 `min_hits` / `max_distance` 打开，阈值该定多少先用 `python scripts/inspect_scores.py` 看真实分数分布，再拍数字；
+- 它**不计入**上面那张质量表，也不作为"检索更好"的依据。
+
 ## 目录结构
 
 ```text

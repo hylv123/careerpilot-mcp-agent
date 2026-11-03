@@ -14,6 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # store 层测试要真的 XADD/XREADGROUP/XAUTOCLAIM，mock 不出 PEL 语义，
+    # 所以起一个真 Redis；测试只在 db 15 上跑，退出前 FLUSHDB。
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CAREERPILOT_TEST_REDIS_URL: redis://127.0.0.1:6379/15
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -27,9 +43,11 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
 
+      # -t . 不能省：不带它时测试模块被当顶层模块导入，tests/__init__.py 不执行，
+      # 日志会写回仓库 logs/（test_environment_isolation 会因此变红）
       - name: Run offline tests
-        run: python -m unittest discover -s tests -v
+        run: python -m unittest discover -s tests -t . -v
 
       - name: Compile project sources
-        run: python -m compileall -q agent knowledge mcp_servers eval run.py
+        run: python -m compileall -q agent api tasks knowledge mcp_servers eval ui run.py
 

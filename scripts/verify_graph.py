@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -50,12 +51,25 @@ def has_direct_edge(graph, source: str, target: str) -> bool:
     )
 
 
-def main() -> int:
-    graph_module.get_mcp_tools = lambda: []
-    app = graph_module.build_graph()
-    graph = app.get_graph()
+def build_static_graph():
+    """编译图，但把 MCP 工具强制为空（不起子进程、不碰网络）。
 
-    checks = [
+    用 patch 而不是直接赋值 `graph_module.get_mcp_tools = ...`：
+    直接赋值会污染同进程里后续的测试，patch 退出即恢复。
+    """
+    with patch.object(graph_module, "get_mcp_tools", lambda: []):
+        return graph_module.build_graph()
+
+
+def check_graph() -> list[tuple[str, bool]]:
+    """编译图并返回 15 条结构断言的结果。
+
+    抽成函数是为了能被测试直接调用（tests/test_graph_topology.py），
+    这样"图断言"才真的在 CI 里跑，而不是只存在于一个手动脚本。
+    """
+    graph = build_static_graph().get_graph()
+
+    return [
         ("START -> analyze", has_path(graph, "__start__", "analyze")),
         ("analyze -> match", has_path(graph, "analyze", "match")),
         ("match -> agent", has_path(graph, "match", "agent")),
@@ -75,6 +89,10 @@ def main() -> int:
         ("questions -> save", has_path(graph, "questions", "save")),
         ("save -> END", has_path(graph, "save", "__end__")),
     ]
+
+
+def main() -> int:
+    checks = check_graph()
     for name, passed in checks:
         print(f"[{'PASS' if passed else 'FAIL'}] {name}")
     return 0 if all(passed for _, passed in checks) else 1

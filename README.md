@@ -150,6 +150,7 @@ careerpilot/
 ├── mcp_servers/           # resume / job / document 三个 MCP Server
 ├── eval/                  # 20 例评测集、检索标注集与结果
 ├── scripts/               # 图结构、MCP、分数分布等调试脚本
+├── ui/                    # Streamlit 界面（通过 HTTP 访问 API）
 ├── tests/                 # 离线单元测试
 ├── docs/                  # 迭代记录
 ├── run.py                 # 命令行入口
@@ -159,11 +160,11 @@ careerpilot/
 ## 测试
 
 ```powershell
-python -m unittest discover -s tests -v
-python -m compileall -q agent api tasks knowledge mcp_servers eval
+python -m unittest discover -s tests -t . -v   # 124 例离线单测（含 Redis 层，需本地 6379）
+python -m compileall -q agent api tasks knowledge mcp_servers eval ui
 ```
 
-`.github/workflows/ci.yml` 在推送与 PR 时执行上面两步，不调用模型、不需要 Key。需要真实模型的评测手动运行：
+`.github/workflows/ci.yml` 在推送与 PR 时执行上面两步（CI 自带 redis service），不调用模型、不需要 Key。需要真实模型的评测手动运行：
 
 ```powershell
 python -m eval.test_cases --output eval/results.json
@@ -172,7 +173,7 @@ python -m eval.recall
 
 ## 已知限制
 
-- 没有 Web 界面，通过命令行或 HTTP 接口使用
+- 界面是单机 Streamlit，不含登录与多租户
 - MCP Server 是本地 stdio 子进程，不是远程服务
 - 评测规模小，默认不启用真实 MCP 写操作
 - 相似度阈值与知识库、Embedding 模型相关，换数据后需要重新校准

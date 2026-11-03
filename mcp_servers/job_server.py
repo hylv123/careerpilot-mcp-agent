@@ -34,7 +34,7 @@ def _session():
         sqlite3.Connection 的上下文管理器只做事务（正常 commit / 异常 rollback），
         **不会关闭连接**。每次工具调用泄漏一个连接，worker 长跑后句柄耗尽，
         最终 `too many open files`（Linux）或句柄上限（Windows）。
-        save_job 原本用了 closing() 是对的，其余四个工具漏了。
+        早期只有 save_job 显式关闭连接，其余四个工具漏了。
 
     为什么还要套一层 `with conn:`：
         保留原来的事务语义：异常时回滚，不留半条记录。

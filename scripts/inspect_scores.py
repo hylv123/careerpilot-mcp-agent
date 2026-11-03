@@ -4,7 +4,7 @@
 
     FAISS 的 similarity_search_with_score 返回的是「距离」而不是「相似度」，
     数值越小代表越相似。knowledge/retrieve.py 的 retrieve_agentic 里用
-    max_distance=0.95 判断"这条算不算高相关"，但 0.95 是当初拍的经验值。
+    DEFAULT_MAX_DISTANCE 判断"这条算不算高相关"，而这个值是拍的经验值。
 
     只有看到真实查询下分数的分布，才能判断这个阈值到底是松了还是紧了。
     这个分布是校准阈值的唯一依据——结论必须是跑出来的，而不是凭感觉定的。
@@ -29,11 +29,11 @@ if str(PROJECT_ROOT) not in sys.path:
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from knowledge.retrieve import retrieve  # noqa: E402
+from knowledge.retrieve import DEFAULT_MAX_DISTANCE, retrieve  # noqa: E402
 
 # 前四组是知识库里大概率有的主题，最后一组是知识库里大概率没有的主题。
 # 最后一组很重要：它能告诉你「真正不相关时分数会高到多少」，
-# 有了这个对照，0.95 到底合不合理才有判断基准。
+# 有了这个对照，这个阈值到底合不合理才有判断基准。
 DEFAULT_QUERIES: list[str] = [
     "Python LangChain RAG 检索",
     "向量数据库 FAISS Embedding",
@@ -43,7 +43,8 @@ DEFAULT_QUERIES: list[str] = [
 ]
 
 DEFAULT_K = 5
-DEFAULT_THRESHOLD = 0.95
+# 直接用生产代码里的阈值，不在脚本里另写一个数字
+DEFAULT_THRESHOLD = DEFAULT_MAX_DISTANCE
 
 
 def inspect(query: str, k: int, threshold: float) -> dict:
@@ -145,7 +146,7 @@ def main() -> int:
     print("     白白多一次 LLM 调用")
     print("  3. 相关与不相关的查询分数能明显区分 -> 阈值合理")
     print()
-    print("把结果记下来，这就是「0.95 是怎么定的」这个问题的答案。")
+    print("把结果记下来，这就是「阈值是怎么定的」这个问题的答案。")
     return 0
 
 

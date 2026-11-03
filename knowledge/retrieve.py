@@ -78,11 +78,18 @@ def rewrite_query(jd_keywords: list[str], llm) -> str:
     return (prompt | llm).invoke({"keywords": ",".join(jd_keywords[:5])}).content
 
 
+# 「这条算不算高相关」的距离上限。**唯一来源**：scripts/inspect_scores.py
+# 直接引用它，避免脚本里另写一个数字、改了生产却忘了改脚本。
+# 注意它是 L2 距离（越小越相似），且与知识库/Embedding 模型强相关，
+# 换数据后必须重新校准。
+DEFAULT_MAX_DISTANCE = 1.02
+
+
 def retrieve_agentic(
     jd_keywords: list[str],
     k: int = 4,
     min_hits: int = 2,
-    max_distance: float = 1.02,
+    max_distance: float = DEFAULT_MAX_DISTANCE,
 ) -> list[dict]:
     """
     先检索原字，当高相关结果不足时改写查询并补充检索。

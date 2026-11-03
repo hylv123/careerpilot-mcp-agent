@@ -1,6 +1,6 @@
 """常驻任务消费者：从 Redis Stream 取任务并执行。
 
-独立进程的原因：一次分析 50~120 秒，放在 API 进程里会占满请求线程；独立后可单独扩缩容。
+独立进程的原因：一次分析十几秒到两分钟，放在 API 进程里会占满请求线程；独立后可单独扩缩容。
 
 启动方式：
     python -m tasks.worker
@@ -39,7 +39,7 @@ from tasks.store import (
 )
 
 # 认领滞留任务前要求的最小闲置时间：2 分钟。
-# 设太短会误抢"正在正常执行"的任务（一个任务本来就要跑 100 秒）。
+# 设太短会误抢"正在正常执行"的任务（旧模型下单任务实测约 100 秒，新模型 10~20 秒，取最坏情况）。
 STALE_IDLE_MS = int(os.getenv("WORKER_STALE_IDLE_MS", "120000"))
 # 没任务时的阻塞等待时长。设短一点是为了让 SIGTERM 能被及时响应。
 CLAIM_BLOCK_MS = int(os.getenv("WORKER_CLAIM_BLOCK_MS", "2000"))

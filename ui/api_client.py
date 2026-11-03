@@ -183,7 +183,7 @@ def analyze_sync(
 ) -> dict[str, Any]:
     """同步分析：直接拿完整结果，用于调试和没有 Redis 的场景。
 
-    timeout 默认 300 秒，因为一次分析实测 50~120 秒，给足余量。
+    timeout 默认 300 秒，因为一次分析十几秒到两分钟，给足余量。
     """
     http = _http(session)
     url = f"{base_url.rstrip('/')}/analyze/sync"

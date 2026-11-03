@@ -11,6 +11,7 @@ FastAPI 提供 HTTP 接口，Redis Stream 做异步任务队列（含幂等与�
 - **工具路由**：Agent 按需调用简历查询 / 岗位管理 / 文档生成三类工具，最多 3 轮
 - **材料生成**：匹配报告、1~3 条简历要点、5 道面试题，均带 `evidence_source`
 - **岗位记录**：写入 SQLite，支持按状态筛选与更新
+- **网页界面**：填 JD → 轮询进度 → 分块查看报告、简历要点与面试题（`ui/`，Streamlit）
 
 ## 快速开始
 
@@ -35,24 +36,40 @@ python -m knowledge.build_index  # 构建向量索引
 python run.py --jd-file examples/sample_jd.txt
 ```
 
+方式三，网页界面（需要先启动 API）：
+
+```powershell
+python -m pip install -r requirements-ui.txt
+python -m streamlit run ui/app.py
+```
+
+界面默认连 `http://127.0.0.1:8000`，可用 `CAREERPILOT_API_URL` 覆盖。
+
 ## 架构
 
 ```mermaid
 flowchart LR
     U[岗位 JD] --> API[FastAPI]
     API -->|XADD| Q[(Redis Stream)]
-    Q -->|消费组| W[Worker]
-    W --> A[LangGraph]
-    API -->|XREAD 状态| ST[(Redis 状态)]
-    W -->|HSET 状态| ST
+    Q -->|XREADGROUP| W[Worker]
+    W -->|HSET 状态| ST[(Redis Hash)]
+    API -->|HGETALL 状态| ST
 
-    subgraph G[工作流]
-        P[岗位分析] --> R[经历检索] --> T[工具决策] --> M[匹配报告] --> B[简历要点] --> QQ[面试题] --> SV[保存岗位]
+    subgraph G[LangGraph 工作流]
+        P[岗位分析] --> R[经历检索] --> A[工具决策]
+        A -->|还需要工具| MC[MCP Server ×3]
+        MC --> A
+        A -->|不再调工具 / 轮次用完| D[扇出]
+        D --> M[匹配报告]
+        D --> B[简历要点]
+        D --> QQ[面试题]
+        M --> SV[保存岗位]
+        B --> SV
+        QQ --> SV
     end
 
-    A --> P
+    W --> P
     R <--> K[(FAISS 索引)]
-    T <--> MC[MCP Server ×3]
     SV <--> DB[(SQLite)]
 ```
 
@@ -70,10 +87,14 @@ api 与 worker 用同一个镜像、不同启动命令。api 只收请求和派�
 状态码：`429` 触发限流，`404` 任务不存在或已过期（结果保留 24 小时），`502` 上游失败，`503` 任务存储不可用。
 
 ```powershell
+$body = @{ jd = "招聘 AI 应用开发实习生，要求 Python 与 RAG 经验" } | ConvertTo-Json
 $r = Invoke-RestMethod -Uri http://localhost:8000/analyze -Method Post `
-     -ContentType "application/json" -Body '{"jd":"招聘 AI 应用开发实习生，要求 Python 与 RAG 经验"}'
+     -ContentType "application/json; charset=utf-8" `
+     -Body ([Text.Encoding]::UTF8.GetBytes($body))
 Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
 ```
+
+> Windows PowerShell 5.1 把字符串 body 按 ANSI 发送，中文会变成 `?`，必须传 UTF-8 字节（上面写法）。
 
 ## 任务队列
 
@@ -84,7 +105,7 @@ Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
 - **降级**：Redis 不可用时同步执行，响应头带 `X-Analysis-Mode: sync-fallback`
 - **退出**：SIGTERM 只置退出标志，当前任务 ACK 后进程才退出
 
-一次分析要跑 50~120 秒，超过网关和浏览器常见的 30~60 秒超时，所以走异步：接口毫秒级返回 `task_id`，客户端轮询结果。
+一次分析要跑十几秒到两分钟（取决于模型：`deepseek-flash` 关闭思考模式后实测 12~16 秒；下面 20 例评测那批平均 59 秒），仍可能超过网关和浏览器常见的 30~60 秒超时，所以走异步：接口毫秒级返回 `task_id`，客户端轮询结果。
 
 ## MCP 工具
 

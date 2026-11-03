@@ -37,7 +37,7 @@ UPSTREAM_ERROR_HINTS = (
 
 # agent 决定不再调工具后，同时启动的三个生成节点。
 # 它们都只依赖 analysis + evidence，彼此没有数据依赖，所以可以并行：
-# 串行耗时是三者之和（实测约 95s），并行后是三者中最大的那个（约 45s）。
+# 串行耗时是三者之和（早期模型实测约 95s），并行后是三者中最大的那个（约 45s）。
 GENERATE_NODES: list[str] = ["report", "rewrite", "questions"]
 
 # 日志不在这里初始化：`logger.add` 会在导入期打开文件，
@@ -494,7 +494,7 @@ def gen_questions(state: State):
 # 为什么 agent 节点必须显式带一条 system 指令：
 #   原本它是把 state["messages"] 直接丢给模型的，模型只看到一句
 #   "岗位分析：xxx / 匹配经历：yyy"，完全不知道自己被期望做什么，
-#   于是按"聊天助手"的默认习惯回应 —— 写一段几百字的总结（实测 21~58 秒）。
+#   于是按"聊天助手"的默认习惯回应 —— 写一段几百字的总结（早期模型实测 21~58 秒）。
 #   而这段总结在本项目里【没有任何消费者】：交付的是结构化字段
 #   （report_text / resume_bullets / interview_questions），
 #   后面三个生成节点各自会去读 analysis + evidence。
@@ -587,7 +587,7 @@ def build_graph():
         #   一段自然语言总结。这个设计只在"用户要的就是 agent 这句话"的聊天场景才成立。
         #   而本项目最终交付的是结构化字段（report_text / resume_bullets /
         #   interview_questions），后面三个生成节点各自会去读 analysis + evidence，
-        #   这段总结根本没有任何消费者——实测每次白白烧掉 21~24 秒和一份 token。
+        #   这段总结根本没有任何消费者——早期模型下实测每次白白烧掉 21~24 秒和一份 token。
         # 因此轮次达到上限时不再调用模型，直接交给路由去 dispatch。
         if state.get("tool_rounds", 0) >= MAX_TOOL_ROUNDS:
             logger.info("[agent] 工具轮次已达上限，跳过收尾决策，直接进入生成阶段")
@@ -680,7 +680,7 @@ def build_graph():
 
         原来是 `g.add_edge("tools", "agent")` 无条件回 agent，于是即使工具轮次
         已经用完，也还要把模型再叫起来"确认一遍"。而此时它已经不可能再调工具
-        （route_after_agent 会拦），唯一能做的事就是写一段没人读的总结，实测 21~24 秒。
+        （route_after_agent 会拦），唯一能做的事就是写一段没人读的总结，早期模型下实测 21~24 秒。
         现在轮次用完就直接去 dispatch，省掉这次调用。
         """
         if state.get("tool_rounds", 0) >= MAX_TOOL_ROUNDS:

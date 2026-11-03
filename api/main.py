@@ -1,7 +1,7 @@
 """CareerPilot HTTP 服务入口。
 
 接口：POST /analyze（202 + task_id）、GET /tasks/{task_id}、POST /analyze/sync、GET /health。
-一次分析要 50~120 秒，超过网关与浏览器常见超时，所以主路径走异步；同步接口用于调试与 Redis 不可用时的降级。
+一次分析要十几秒到两分钟，可能超过网关与浏览器常见超时，所以主路径走异步；同步接口用于调试与 Redis 不可用时的降级。
 """
 from __future__ import annotations
 

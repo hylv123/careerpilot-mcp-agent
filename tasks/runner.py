@@ -61,6 +61,8 @@ def build_initial_state(jd: str) -> dict[str, Any]:
         "report_text": "",
         "resume_bullets": [],
         "interview_questions": [],
+        "saved": False,
+        "save_error": "",
         "messages": [],
         "tool_rounds": 0,
     }
@@ -92,4 +94,6 @@ def run_analysis(jd: str) -> dict[str, Any]:
         "report_text": result.get("report_text", ""),
         "resume_bullets": result.get("resume_bullets", []),
         "interview_questions": result.get("interview_questions", []),
+        "saved": bool(result.get("saved", False)),
+        "save_error": result.get("save_error", ""),
     }

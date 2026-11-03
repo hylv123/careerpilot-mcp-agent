@@ -26,6 +26,7 @@ os.environ.setdefault("CAREERPILOT_ROLE", "worker")
 
 from loguru import logger
 
+from agent.logging_setup import setup_logging
 from tasks.runner import run_analysis
 from tasks.store import (
     STATUS_DONE,
@@ -93,6 +94,36 @@ def _handle(message: TaskMessage) -> None:
         store.ack(message.message_id)
 
 
+def _drain(messages: list[TaskMessage], *, sleep_fn=sleep) -> None:
+    """逐条处理本轮取到的消息，把"确认失败"和"任务失败"分开对待。
+
+    为什么要单独包一层：
+        `_handle` 的 finally 里会 `store.ack(...)`，而 ack 失败会抛
+        RedisUnavailable。原来 `for message in messages: _handle(message)`
+        写在 main 的 try 之外，这个异常会一路冒出 main → 进程退出。
+        可"没确认成功"不代表"任务失败"：消息还留在 PEL 里，120s 后会被
+        别的 worker 用 XAUTOCLAIM 认领，语义本来就是"未完成"。
+        为一个可恢复的确认失败杀掉常驻进程，代价是：崩溃 + 用户白等 +
+        整条分析重做一遍（重复烧模型调用、重复写库）。
+
+    为什么不在这里重试 ack：
+        绝大多数失败是一次性 socket 超时，交给 PEL 的 120s 重认领更简单，
+        也不需要在本函数里引入"重试几次、退避多久"的新参数。
+
+    Args:
+        messages: 本轮 claim/reclaim 到的消息。
+        sleep_fn: 睡眠函数，测试里可以注入空实现。
+    """
+    for message in messages:
+        try:
+            _handle(message)
+        except RedisUnavailable as exc:
+            logger.warning(
+                "[worker] 确认/回写失败，消息留在 PEL 等待重新认领：{}", exc
+            )
+            sleep_fn(RETRY_SLEEP_SECONDS)
+
+
 def main() -> int:
     """进程入口。
 
@@ -101,6 +132,9 @@ def main() -> int:
     """
     signal.signal(signal.SIGTERM, _request_stop)
     signal.signal(signal.SIGINT, _request_stop)
+
+    # 角色（CAREERPILOT_ROLE=worker）已在文件顶部设好，这里按角色落不同的日志文件
+    setup_logging()
 
     store = get_store()
     store.ensure_group()
@@ -123,8 +157,7 @@ def main() -> int:
             sleep(RETRY_SLEEP_SECONDS)
             continue
 
-        for message in messages:
-            _handle(message)
+        _drain(messages)
 
     logger.info("[worker] 已优雅退出")
     return 0

@@ -13,6 +13,21 @@ _MCP_JSON = Path(__file__).resolve().parent.parent / "mcp.json"
 _client: MultiServerMCPClient | None = None
 _tools_cache: list | None = None
 
+# 工具失败时返回的固定前缀。
+# 为什么需要它：工具异常不往外抛（抛了会打断整次分析），而是降级成一句文本。
+# 但"降级成文本"就等于调用方无法区分"工具真的成功了"和"工具失败了"——
+# 保存岗位时会直接变成静默丢数据。所以给失败文本一个机器可判的前缀，
+# 由 is_tool_error() 判定，调用方据此写结构化字段。
+TOOL_ERROR_PREFIX = "MCP 工具调用失败："
+
+# 失败文本的两种来源，必须都认：
+#   1. TOOL_ERROR_PREFIX —— 本文件 _to_sync_tool 捕获的传输/协议异常；
+#   2. "Error executing tool" —— FastMCP 在服务端把工具异常包成的 ToolError
+#      （mcp/server/fastmcp/tools/base.py 里 f"Error executing tool {name}: {e}"）。
+#      adapter 不抛异常、只把文本塞进 content blocks，isError 标记在这一层丢了，
+#      所以只能按 SDK 的约定文本识别。__pycache__ 里也能看到同样的字符串。
+TOOL_ERROR_MARKERS = (TOOL_ERROR_PREFIX, "Error executing tool")
+
 
 def _build_client() -> MultiServerMCPClient:
     """从 mcp.json 构造 MultiServerMCPClient"""
@@ -68,6 +83,36 @@ def _normalize_tool_result(result: Any) -> str:
             return _normalize_tool_result(content)
     return str(result)
 
+def is_tool_error(result: Any) -> bool:
+    """判断一次工具调用是不是"失败降级成文本"。
+
+    Args:
+        result: 工具调用的返回值（归一化后的字符串，或原始 content blocks）。
+
+    Returns:
+        True 表示这次调用失败（调用方不该把它当成成功）。
+
+    为什么不能用异常：`_to_sync_tool` 刻意把异常吞成文本，保证一次工具失败
+    不会打断整次分析。代价就是调用方失去了"成功/失败"的信号，
+    只能靠 TOOL_ERROR_MARKERS 把信号找回来。
+
+    为什么还要处理 list：adapter 在服务端工具抛错时返回的是
+    [{'type': 'text', 'text': 'Error executing tool ...'}] 这样的内容块，
+    而不是抛异常；直接传进来时也必须能识别。
+    """
+    if isinstance(result, str):
+        text = result
+    elif isinstance(result, list):
+        text = "\n".join(
+            str(item.get("text", ""))
+            for item in result
+            if isinstance(item, dict) and item.get("type") == "text"
+        )
+    else:
+        return False
+    return text.lstrip().startswith(TOOL_ERROR_MARKERS)
+
+
 def _to_sync_tool(tool):
     """
     MCP 工具只实现异步调用（_arun），ToolNode 同步执行时会报
@@ -112,7 +157,7 @@ def _to_sync_tool(tool):
             )
 
             return (
-                f"MCP 工具 {tool.name} 暂时不可用："
+                f"{TOOL_ERROR_PREFIX}{tool.name}："
                 f"{type(exc).__name__}: {exc}"
             )
     return SyncStructuredTool(

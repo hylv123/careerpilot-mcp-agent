@@ -1,5 +1,4 @@
 import json
-import os
 import random
 import threading
 
@@ -13,17 +12,14 @@ from knowledge.retrieve import retrieve_agentic
 from typing import Any, TypeVar, ParamSpec
 from collections.abc import Callable
 from functools import wraps
-from pathlib import Path
 from time import perf_counter, sleep
 from loguru import logger
 from .schemas import JobAnalysisGraph, ResumeBulletList, InterviewQuestionList
 from .llm import get_ds_chat_model
 from .state import State
-from .mcp_tools import get_mcp_tools
+from .mcp_tools import get_mcp_tools, is_tool_error
 
 
-LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
 MAX_TOOL_ROUNDS = 3
 
 RETRY_BASE_DELAY = 1.0    # 第一次失败后等待的基准秒数
@@ -44,19 +40,10 @@ UPSTREAM_ERROR_HINTS = (
 # 串行耗时是三者之和（实测约 95s），并行后是三者中最大的那个（约 45s）。
 GENERATE_NODES: list[str] = ["report", "rewrite", "questions"]
 
-# 为什么日志文件名要带角色后缀：
-#   API 和 worker 是两个独立进程（生产上是两个容器），如果都往同一个文件里写，
-#   达到 rotation 阈值时 loguru 会 rename 文件，而另一边还握着旧句柄，
-#   直接 PermissionError —— 这个坑在 Windows 本地调试时真实踩过一次。
-#   按角色分开文件，谁也不会动谁的。（worker 进程会自己声明角色，见 tasks/worker.py）
-_log_role = os.getenv("CAREERPILOT_ROLE", "")
-_log_suffix = f"_{_log_role}" if _log_role else ""
-logger.add(
-    LOG_DIR / f"careerpilot_{{time:YYYY-MM-DD}}{_log_suffix}.log",
-    encoding="utf-8",
-    rotation="10 MB",
-    retention="7 days",
-)
+# 日志不在这里初始化：`logger.add` 会在导入期打开文件，
+# 目录只读时会让 `import agent.graph` 直接抛 PermissionError。
+# 现在由进程入口显式调用 agent.logging_setup.setup_logging()，
+# 没配也可以跑——loguru 默认的 stderr sink 仍然是通的。
 
 
 SchemaType = TypeVar("SchemaType", bound=BaseModel)
@@ -372,9 +359,12 @@ def report(state: State) -> dict[str, Any]:
     )
     result = safe_invoke(
         chain = prompt | _get_llm(TIMEOUT_REPORT),
+        # 必须 json.dumps：直接把 dict/list 交给占位符，得到的是 Python repr
+        #（单引号、True/None），不是合法 JSON，模型容易把 None 当字符串读。
+        # rewrite_resume / gen_questions 一直是这么做的，这里以前漏了。
         inputs={
-            "analysis": state["analysis"],
-            "evidence": state["evidence"],
+            "analysis": json.dumps(state["analysis"], ensure_ascii=False),
+            "evidence": json.dumps(state["evidence"], ensure_ascii=False),
         },
         operation_name="report"
     )
@@ -521,6 +511,41 @@ AGENT_SYSTEM = SystemMessage(
 )
 
 
+def save_record_impl(state: State, save_tool: Any) -> dict[str, Any]:
+    """把本次岗位写进 SQLite，并把"到底存没存成功"变成结构化字段。
+
+    Args:
+        state: 当前图状态。
+        save_tool: 已绑定的 save_job 工具；工具发现失败时为 None。
+
+    Returns:
+        含 saved / save_error / messages 三个键的部分状态。
+
+    为什么不再把结果只塞进 messages：
+        messages 里的那句"已保存/暂时不可用"没有任何下游消费者会去判定，
+        于是"岗位没写进库"和"写进去了"在接口层长得一模一样——
+        任务状态是 done、报告也正常，用户以为记录上了，其实没有。
+        静默丢数据比直接失败更难查，所以必须落成 saved 字段。
+    """
+    if save_tool is None:
+        message = "投递记录未保存：save_job MCP 工具不可用"
+        return {"saved": False, "save_error": message, "messages": [("assistant", message)]}
+
+    analysis = state.get("analysis", {})
+    payload = {
+        "title": analysis.get("job_title") or "未识别岗位",
+        "company": analysis.get("company") or "未识别公司",
+        "jd": state["user_input"],
+    }
+    result = save_tool.invoke(payload)
+    ok = not is_tool_error(result)
+    return {
+        "saved": ok,
+        "save_error": "" if ok else str(result),
+        "messages": [("assistant", str(result))],
+    }
+
+
 def build_graph():
     try:
         logger.info("[mcp] 开始发现 MCP 工具")
@@ -588,24 +613,8 @@ def build_graph():
 
     @trace_node("save")
     def save_record(state: State) -> dict[str, Any]:
-        """通过 job MCP 工具保存本次岗位，失败时返回真实状态。"""
-
-        save_tool = tool_map.get("save_job")
-        if save_tool is None:
-            return {
-                "messages": [
-                    ("assistant", "投递记录未保存：save_job MCP 工具不可用")
-                ]
-            }
-
-        analysis = state.get("analysis", {})
-        payload = {
-            "title": analysis.get("job_title") or "未识别岗位",
-            "company": analysis.get("company") or "未识别公司",
-            "jd": state["user_input"],
-        }
-        result = save_tool.invoke(payload)
-        return {"messages": [("assistant", str(result))]}
+        """通过 job MCP 工具保存本次岗位，成功与否写进 saved / save_error。"""
+        return save_record_impl(state, tool_map.get("save_job"))
 
     @trace_node("dispatch")
     def dispatch_generate(state: State) -> dict[str, Any]:
@@ -739,6 +748,8 @@ if __name__ == "__main__":
         "report_text": "",
         "resume_bullets": [],
         "interview_questions": [],
+        "saved": False,
+        "save_error": "",
         "messages": [],
         "tool_rounds": 0,
                         })

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from agent.graph import build_graph
+from agent.logging_setup import setup_logging
 
 
 def parse_args() -> argparse.Namespace:
@@ -20,6 +21,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    setup_logging()
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -39,6 +41,8 @@ def main() -> int:
             "report_text": "",
             "resume_bullets": [],
             "interview_questions": [],
+            "saved": False,
+            "save_error": "",
             "messages": [],
             "tool_rounds": 0,
         }
@@ -73,6 +77,13 @@ def main() -> int:
                 f"来源：{ques.get('evidence_source', '')}"
             )
         print("## 面试准备题\n\n" + "\n\n".join(sections))
+
+    # 岗位是否落库必须显式说一句：以前它只藏在 messages 里，
+    # 工具失败时终端看起来和成功完全一样。
+    if result.get("saved"):
+        print("\n岗位记录：已写入 SQLite")
+    else:
+        print(f"\n岗位记录：未保存 —— {result.get('save_error') or '未知原因'}")
 
     return 0
 

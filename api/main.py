@@ -18,6 +18,7 @@ from api.schemas import (
     TaskAccepted,
     TaskStatusResponse,
 )
+from agent.logging_setup import setup_logging
 from tasks.runner import run_analysis
 from tasks.store import (
     STATUS_PENDING,
@@ -31,6 +32,9 @@ app = FastAPI(
     description="输入岗位 JD，输出结构化匹配分析、简历要点与面试题",
     version="0.2.0",
 )
+
+# 进程入口显式初始化日志（原来在 agent/graph.py 的导入期做，只读目录会炸）
+setup_logging()
 
 # 每分钟最多受理多少个新任务。
 # 限的是"入口"而不是"worker 能力"：队列里的任务都是已经答应了用户要做的，

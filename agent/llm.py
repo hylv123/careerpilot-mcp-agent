@@ -56,5 +56,17 @@ def get_ds_chat_model(temperature: float = 0.3, timeout: float = DEFAULT_TIMEOUT
         # 业务层重试的好处是：能区分"输出不合规"和"上游故障"，
         # 能打自己的日志，也能决定什么时候该放弃。
         max_retries=0,
+        # ⚠️ 必须显式关掉"思考模式"，否则整条结构化输出链路直接 400。
+        # 原因：`with_structured_output(method="function_calling")` 会强制指定
+        #   tool_choice=某个具体函数，而思考模式不支持强制 tool_choice，
+        #   网关返回：400 Thinking mode does not support this tool_choice。
+        # 表现为 analyze 节点连试 3 次全挂 → RuntimeError → 整个任务 failed，
+        #   而且失败发生在第一个节点，报告/要点/面试题一个都出不来。
+        # model_kwargs 会被 openai SDK 当成 create() 的具名参数，传未知字段直接
+        #   TypeError: Completions.create() got an unexpected keyword argument。
+        # 正确通道是 extra_body：SDK 会把它原样合并进请求 JSON，等价于直接发
+        #   {"thinking": {"type": "disabled"}}。换到不支持该字段的供应商时
+        #   需要删掉这一行（或换成对应的关闭开关）。
+        extra_body={"thinking": {"type": "disabled"}},
     )
     return llm

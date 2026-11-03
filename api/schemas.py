@@ -56,6 +56,15 @@ class AnalyzeResponse(BaseModel):
     report_text: str = Field(default="")
     resume_bullets: list[dict[str, Any]] = Field(default_factory=list)
     interview_questions: list[dict[str, Any]] = Field(default_factory=list)
+    saved: bool = Field(
+        default=False,
+        description="岗位是否真的写进了 SQLite。副作用失败时必须能看见，"
+        "否则会变成'任务 done 但库里没有记录'的静默丢数据。",
+    )
+    save_error: str = Field(
+        default="",
+        description="saved 为 False 时的原因；saved 为 True 时为空串。",
+    )
 
 
 class TaskAccepted(BaseModel):

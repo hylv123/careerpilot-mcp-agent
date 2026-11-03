@@ -364,8 +364,11 @@ def _initial_state(jd: str) -> State:
         "user_input": jd,
         "analysis": {},
         "evidence": [],
+        "report_text": "",
         "resume_bullets": [],
         "interview_questions": [],
+        "saved": False,
+        "save_error": "",
         "messages": [],
         "tool_rounds": 0,
     }

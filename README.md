@@ -142,7 +142,7 @@ Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
 
 历史轮次（17/20 → 20/20 → 19/20 → 20/20）与每轮改动见 [docs/EVOLUTION.md](docs/EVOLUTION.md)。
 
-**检索（8 条标注 JD，k=4，`eval/recall_results.json`，2026-10-17）**
+**检索（8 条标注 JD，k=4，`eval/recall_results.json`，2026-11-03 重跑）**
 
 | 指标 | 基础检索 |
 | --- | --- |
@@ -160,7 +160,7 @@ Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
 
 1. **查询改写从未触发**：默认 `max_distance=1.02` 过松，8 条岗位第一轮全部被判为"高相关 ≥2 条"，改写分支一次都没进入，agentic 与 plain 结果完全相同。
 2. **距离分数的绝对值不可用**：各岗位 top-4 分数都在 0.61~0.93，但 Recall 从 0.14 到 0.67，因为不同查询的 L2 距离分布不同。
-3. **强制改写（`min_hits=99`）后平均 Recall@4 升到 0.506、Precision@4 升到 0.688**，但逐条看：原本差的上升，原本好的下降。改写只在第一轮确实不命中时才有收益。
+3. **强制改写（`min_hits=99`）的收益不稳定**：10-17 那轮 Recall@4 从 0.464 升到 0.506、Precision 从 0.656 升到 0.688；11-03 重跑则是 0.464 / 0.656——**与 plain 持平**。原因是改写用的 query 由模型生成（`temperature=0.3`），每次不同，收益落在运行噪声里。所以不能拿单次结果证明"改写有效"。
 
 ## 目录结构
 

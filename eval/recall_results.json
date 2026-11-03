@@ -11,9 +11,9 @@
     "agentic_recall@4": 0.4642857142857143,
     "agentic_precision@4": 0.65625,
     "agentic_mrr": 0.875,
-    "forced_recall@4": 0.5059523809523809,
-    "forced_precision@4": 0.6875,
-    "forced_mrr": 0.8125,
+    "forced_recall@4": 0.4642857142857143,
+    "forced_precision@4": 0.65625,
+    "forced_mrr": 0.875,
     "high_match_recall@4": 0.5079365079365079,
     "low_match_recall@4": 0.3333333333333333
   },
@@ -78,14 +78,14 @@
         25,
         27
       ],
-      "forced_recall@k": 0.42857142857142855,
-      "forced_precision@k": 0.75,
-      "forced_mrr": 0.5,
+      "forced_recall@k": 0.5714285714285714,
+      "forced_precision@k": 1.0,
+      "forced_mrr": 1.0,
       "forced_retrieved": [
-        23,
         0,
         1,
-        25
+        25,
+        27
       ]
     },
     {
@@ -113,14 +113,14 @@
         1,
         21
       ],
-      "forced_recall@k": 0.5,
-      "forced_precision@k": 0.75,
-      "forced_mrr": 0.5,
+      "forced_recall@k": 0.6666666666666666,
+      "forced_precision@k": 1.0,
+      "forced_mrr": 1.0,
       "forced_retrieved": [
-        0,
         23,
         25,
-        1
+        1,
+        21
       ]
     },
     {
@@ -183,14 +183,14 @@
         23,
         2
       ],
-      "forced_recall@k": 0.2857142857142857,
-      "forced_precision@k": 0.5,
-      "forced_mrr": 1.0,
+      "forced_recall@k": 0.14285714285714285,
+      "forced_precision@k": 0.25,
+      "forced_mrr": 0.5,
       "forced_retrieved": [
-        6,
         26,
         25,
-        23
+        23,
+        2
       ]
     },
     {
@@ -218,14 +218,14 @@
         21,
         24
       ],
-      "forced_recall@k": 0.5,
-      "forced_precision@k": 0.75,
+      "forced_recall@k": 0.3333333333333333,
+      "forced_precision@k": 0.5,
       "forced_mrr": 1.0,
       "forced_retrieved": [
-        1,
         25,
         23,
-        21
+        21,
+        24
       ]
     },
     {
@@ -255,12 +255,12 @@
       ],
       "forced_recall@k": 0.3333333333333333,
       "forced_precision@k": 0.25,
-      "forced_mrr": 0.5,
+      "forced_mrr": 1.0,
       "forced_retrieved": [
-        21,
         1,
         4,
-        5
+        5,
+        0
       ]
     },
     {
@@ -288,14 +288,14 @@
         6,
         5
       ],
-      "forced_recall@k": 0.6666666666666666,
-      "forced_precision@k": 0.5,
-      "forced_mrr": 1.0,
+      "forced_recall@k": 0.3333333333333333,
+      "forced_precision@k": 0.25,
+      "forced_mrr": 0.5,
       "forced_retrieved": [
-        11,
-        22,
         26,
-        8
+        8,
+        6,
+        5
       ]
     }
   ]

@@ -74,18 +74,20 @@ def _submit(req: AnalyzeRequest) -> TaskAccepted:
     fingerprint = jd_fingerprint(req.jd)
     task_id = f"task-{uuid4().hex}"
 
-    # 先判幂等，再判限流。顺序不能反：
-    #   命中幂等说明这份 JD 已经有任务了，它不该消耗新的配额，
-    #   否则用户重复提交同一份 JD 会被自己的历史记录挡在门外。
-    existing = store.try_reserve(fingerprint, task_id)
+    # 先判幂等，再判限流，而且这两步在同一个 Lua 脚本里完成：
+    #   1. 命中幂等说明这份 JD 已经有任务了，它不该消耗新的配额，
+    #      否则用户重复提交同一份 JD 会被自己的历史记录挡在门外；
+    #   2. 拆成两次调用的话，"占位"和"限流拒绝后释放"之间存在窗口，
+    #      释放动作可能删掉别人刚抢到的键。合并成原子操作后，
+    #      被限流时根本不会产生占位，也就不存在"退还"。
+    existing, accepted = store.try_reserve_with_quota(
+        fingerprint, task_id, limit=RATE_LIMIT_PER_MINUTE
+    )
     if existing:
         logger.info("[api] 命中幂等，复用已有任务 {}", existing)
         return TaskAccepted(task_id=existing, status=STATUS_PENDING, reused=True)
 
-    if not store.try_consume_quota(RATE_LIMIT_PER_MINUTE):
-        # 被限流拒绝时必须退还刚才占的位，
-        # 否则这个 JD 在 24 小时内都无法重新提交。
-        store.release_reservation(fingerprint)
+    if not accepted:
         raise HTTPException(status_code=429, detail="当前提交过于频繁，请稍后再试")
 
     store.enqueue(task_id, req.jd)

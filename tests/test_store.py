@@ -82,8 +82,22 @@ class ReserveTests(StoreTestBase):
 
     def test_release_allows_resubmit(self) -> None:
         self.store.try_reserve("fp1", "task-a")
-        self.store.release_reservation("fp1")
+        self.assertTrue(self.store.release_reservation("fp1", "task-a"))
         self.assertIsNone(self.store.try_reserve("fp1", "task-c"))
+
+    def test_release_with_wrong_task_id_keeps_the_key(self) -> None:
+        """只有握着锁的人才能开锁。
+
+        这条是面试里被追问出来的：原来的实现是无条件 DELETE，
+        并发下会把别人刚抢到的键删掉，幂等就此失效。
+        """
+        self.store.try_reserve("fp1", "task-a")
+        self.assertFalse(self.store.release_reservation("fp1", "task-b"))
+        self.assertEqual(
+            self.store.try_reserve("fp1", "task-c"),
+            "task-a",
+            "非持有者释放后，原占位必须还在",
+        )
 
     def test_reservation_has_ttl(self) -> None:
         self.store.try_reserve("fp1", "task-a")
@@ -102,6 +116,65 @@ class QuotaTests(StoreTestBase):
         keys = [k for k in self.client.keys("careerpilot:rate:*")]
         self.assertEqual(len(keys), 1)
         self.assertGreater(self.client.ttl(keys[0]), 0)
+
+
+class ReserveWithQuotaTests(StoreTestBase):
+    """占位 + 限流合并成一个 Lua 之后的语义。
+
+    这组用例对应面试里被追问的那个场景：两个请求并发、一个拿到幂等、
+    一个被限流，被拒的那个会不会把前面的键删掉。
+    """
+
+    def test_idempotent_hit_does_not_consume_quota(self) -> None:
+        self.assertEqual(
+            self.store.try_reserve_with_quota("fp1", "task-a", limit=1),
+            (None, True),
+        )
+        # 同一份 JD 重复提交：复用已有任务，且不该吃掉额度
+        self.assertEqual(
+            self.store.try_reserve_with_quota("fp1", "task-b", limit=1),
+            ("task-a", False),
+        )
+        # 换一份 JD 仍然能受理，证明上面那次没有计数
+        self.assertEqual(
+            self.store.try_reserve_with_quota("fp2", "task-c", limit=1),
+            (None, True),
+        )
+
+    def test_rate_limited_request_leaves_no_reservation(self) -> None:
+        self.store.try_reserve_with_quota("fp1", "task-a", limit=1)
+        self.assertEqual(
+            self.store.try_reserve_with_quota("fp2", "task-b", limit=1),
+            (None, False),
+        )
+        self.assertFalse(
+            self.client.exists(DEDUP_KEY.format("fp2")),
+            "被限流时不该留下占位，否则这份 JD 24 小时内都提交不了",
+        )
+
+    def test_concurrent_same_fingerprint_only_one_wins(self) -> None:
+        import threading
+
+        results: list[tuple[str | None, bool]] = []
+        lock = threading.Lock()
+
+        def submit(i: int) -> None:
+            outcome = self.store.try_reserve_with_quota(
+                "fpX", f"task-{i}", limit=100
+            )
+            with lock:
+                results.append(outcome)
+
+        threads = [threading.Thread(target=submit, args=(i,)) for i in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        winners = [r for r in results if r == (None, True)]
+        self.assertEqual(len(winners), 1, "同一份 JD 只能有一个请求抢到执行权")
+        existing = {r[0] for r in results if r[0] is not None}
+        self.assertEqual(len(existing), 1, "其余请求都应该复用同一个 task_id")
 
 
 class QueueTests(StoreTestBase):

@@ -31,6 +31,7 @@ class _FakeStore:
         self.iterations = 0
         self.acked: list[str] = []
         self.statuses: list[tuple[str, str]] = []
+        self.released: list[tuple[str, str]] = []
 
     def ensure_group(self) -> None:
         self.calls.append("ensure_group")
@@ -55,8 +56,10 @@ class _FakeStore:
     def ack(self, message_id) -> None:
         self.acked.append(message_id)
 
-    def release_reservation(self, fingerprint) -> None:
+    def release_reservation(self, fingerprint, task_id) -> bool:
         self.calls.append("release_reservation")
+        self.released.append((fingerprint, task_id))
+        return True
 
 
 def _msg(task_id="task-1"):
@@ -117,6 +120,11 @@ class WorkerMainTests(unittest.TestCase):
 
         self.assertEqual(store.statuses, [("task-1", "running"), ("task-1", "failed")])
         self.assertIn("release_reservation", store.calls)
+        self.assertEqual(
+            [task_id for _, task_id in store.released],
+            ["task-1"],
+            "释放幂等位必须带自己的 task_id，否则可能删掉别人重新抢到的键",
+        )
         self.assertEqual(store.acked, ["task-1-0"], "失败的任务也必须 ACK，否则会被反复重做")
 
 

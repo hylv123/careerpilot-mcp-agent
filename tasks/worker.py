@@ -87,8 +87,9 @@ def _handle(message: TaskMessage) -> None:
             STATUS_FAILED,
             error=f"{type(exc).__name__}: {exc}",
         )
-        # 释放幂等占用，否则用户在 24 小时内无法原样重新提交这个 JD
-        store.release_reservation(jd_fingerprint(message.jd))
+        # 释放幂等占用，否则用户在 24 小时内无法原样重新提交这个 JD。
+        # 必须带上自己的 task_id：只删自己那把锁，别把别人重新抢到的删掉。
+        store.release_reservation(jd_fingerprint(message.jd), message.task_id)
         logger.exception("[worker] 任务失败 task_id={}", message.task_id)
     finally:
         store.ack(message.message_id)

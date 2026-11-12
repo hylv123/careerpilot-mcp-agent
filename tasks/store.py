@@ -40,6 +40,40 @@ DEFAULT_RESULT_TTL = 24 * 3600
 DEFAULT_DEDUP_TTL = 24 * 3600
 DEFAULT_RATE_WINDOW = 60
 
+# ---------- Lua 脚本 ----------
+# 为什么这些操作必须写成 Lua：
+#   "查幂等 → 查限流 → 占位 → 计数"是四步，客户端分开调的话，任何两步之间
+#   都可能有别的请求挤进来：两个请求同时读到"没人占位"就会双双执行；
+#   一个请求释放占位时也可能把别人刚抢到的键删掉。
+#   Redis 执行 Lua 期间是单线程的，外部看到的只有"全做完"或"全没做"。
+_RELEASE_LUA = """
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('DEL', KEYS[1])
+end
+return 0
+"""
+
+# 返回值的三种情况（用类型区分，避免再引入一个布尔值）：
+#   字符串 —— 幂等命中，值是已有的 task_id，调用方直接复用
+#   1      —— 抢占成功且扣到了配额
+#   0      —— 配额用尽，本次被限流（且没有留下任何占位）
+_RESERVE_WITH_QUOTA_LUA = """
+local existing = redis.call('GET', KEYS[1])
+if existing then
+    return existing
+end
+local count = redis.call('INCR', KEYS[2])
+if count == 1 then
+    redis.call('EXPIRE', KEYS[2], tonumber(ARGV[3]))
+end
+if count > tonumber(ARGV[2]) then
+    redis.call('DECR', KEYS[2])
+    return 0
+end
+redis.call('SET', KEYS[1], ARGV[1], 'EX', tonumber(ARGV[4]))
+return 1
+"""
+
 
 class RedisUnavailable(RuntimeError):
     """Redis 不可用。
@@ -411,22 +445,38 @@ class TaskStore:
         except RedisError as exc:
             raise RedisUnavailable(f"读取已占用任务失败：{exc}") from exc
 
-    def release_reservation(self, fingerprint: str) -> None:
+    def release_reservation(self, fingerprint: str, task_id: str) -> bool:
         """释放执行权，让同一个 JD 可以被重新提交。
 
         Args:
             fingerprint: jd_fingerprint() 算出的指纹。
+            task_id: 认为自己持有这份占位的任务编号。
+
+        Returns:
+            True 表示确实释放了自己的占位；False 表示这个键已经不属于
+            调用方（被别人重新抢占了，或者早已过期），本次什么都没删。
 
         Raises:
             RedisUnavailable: 操作失败。
 
+        为什么必须带上 task_id、并且用 Lua 比较后再删：
+            原实现是 `DELETE(key)`，不看值。设想这个时序——
+                ① 请求 A 抢到 JD-x 的占位，进入限流判断；
+                ② A 被限流拒绝，走到释放；
+                ③ 在 A 执行 DELETE 之前，B 刚好重新抢到了 JD-x；
+            这时 A 的 DELETE 会**把 B 刚写进去的键删掉**，B 的任务就此失去
+            幂等保护，同一个 JD 能被重复提交、重复扣费、重复写库。
+            比较 + 删除必须在同一个原子操作里完成，所以用 Lua。
+
         什么时候需要：任务最终失败时。如果不释放，
         用户在 24 小时内无法通过"再提交一次"来重试。
         """
+        key = DEDUP_KEY.format(fingerprint)
         try:
-            self._client.delete(DEDUP_KEY.format(fingerprint))
+            released = self._client.eval(_RELEASE_LUA, 1, key, task_id)
         except RedisError as exc:
             raise RedisUnavailable(f"释放任务占用失败：{exc}") from exc
+        return bool(released)
 
     # ---------------------------------------------------------------- 限流
     def try_consume_quota(
@@ -467,6 +517,64 @@ class TaskStore:
             raise RedisUnavailable(f"限流计数失败：{exc}") from exc
 
         return int(count) <= limit
+
+    def try_reserve_with_quota(
+        self,
+        fingerprint: str,
+        task_id: str,
+        *,
+        limit: int,
+        window_seconds: int = DEFAULT_RATE_WINDOW,
+    ) -> tuple[str | None, bool]:
+        """原子完成"幂等判重 + 限流计数 + 占位"。
+
+        Args:
+            fingerprint: jd_fingerprint() 算出的指纹。
+            task_id: 本次任务的编号，抢占成功后写进幂等键的值里。
+            limit: 一个时间窗口内允许受理的最大任务数。
+            window_seconds: 限流窗口长度（秒）。
+
+        Returns:
+            (existing_task_id, accepted)：
+                ("task-xxx", ...) —— 幂等命中，复用已有任务，不消耗配额
+                (None, True)       —— 抢占成功，调用方应入队
+                (None, False)      —— 配额用尽，调用方应返回 429
+
+        Raises:
+            RedisUnavailable: 操作失败。
+
+        为什么要把三步合成一个 Lua：
+            分开调的时候有三个真实的窗口——
+                ① 先查后占：两个请求同时读到"没人占位"，双双执行；
+                ② 占了位再查限流：被拒后要退位，退位又可能是误删；
+                ③ 退位和下一个请求的占位交错：把别人的键删掉。
+            合成之后这些窗口全部消失：被限流时**根本没有产生占位**，
+            也就不存在"退还"这个动作，"退还时误删"自然不可能发生。
+
+        为什么限流拒绝时要把计数减回去：
+            原来用 INCR 先加再比较，被拒的请求也会把计数顶上去，
+            等于"被拒绝一次就更难通过一次"，窗口内的额度会被自己的
+            重试吃掉。现在只有真正受理的任务才计数。
+        """
+        dedup_key = DEDUP_KEY.format(fingerprint)
+        rate_key = RATE_KEY.format(int(time.time()) // window_seconds)
+        try:
+            raw = self._client.eval(
+                _RESERVE_WITH_QUOTA_LUA,
+                2,
+                dedup_key,
+                rate_key,
+                task_id,
+                limit,
+                window_seconds + 1,
+                self._dedup_ttl,
+            )
+        except RedisError as exc:
+            raise RedisUnavailable(f"抢占任务失败：{exc}") from exc
+
+        if isinstance(raw, str) and raw:
+            return raw, False
+        return None, raw == 1
 
 
 _STORE: TaskStore | None = None

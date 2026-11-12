@@ -178,7 +178,7 @@ careerpilot/
 ├── agent/                 # LangGraph 状态、节点、Schema、模型与 MCP 适配
 ├── api/                   # FastAPI 入口与接口契约
 ├── tasks/                 # 队列、worker、共享执行入口
-├── knowledge/             # 索引构建与检索（docs/ 为脱敏示例资料）
+├── knowledge/             # 索引构建与检索（docs/ 通用笔记；docs/private/ 本地真实简历，已 gitignore）
 ├── mcp_servers/           # resume / job / document 三个 MCP Server
 ├── eval/                  # 20 例评测集、检索标注集与结果
 ├── scripts/               # 图结构、MCP、分数分布等调试脚本
@@ -215,3 +215,5 @@ python -m eval.recall
 ## 隐私
 
 仓库只包含脱敏示例资料，不含真实简历、手机号与私人记录。`.env` 在 `.gitignore` 与 `.dockerignore` 中，不会进入提交或镜像。
+
+真实简历建议放在 `knowledge/docs/private/`（参与 RAG 检索）与 `data/resume.local.json`（供 resume MCP Server 读取），两处都已在 `.gitignore` 中。

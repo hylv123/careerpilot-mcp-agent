@@ -19,7 +19,9 @@ Thumbs.db
 # Runtime artifacts
 logs/
 output/
+tmp/
 data/*.db
+data/resume.local.json
 
 # Rebuildable vector index
 knowledge/index/

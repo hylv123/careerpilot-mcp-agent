@@ -113,6 +113,60 @@ def is_tool_error(result: Any) -> bool:
     return text.lstrip().startswith(TOOL_ERROR_MARKERS)
 
 
+# 拒绝一次工具调用时回灌给模型的固定前缀。
+# 为什么要有前缀：模型需要能区分"工具执行失败了"和"这个调用根本没被允许"，
+# 前者应该重试，后者应该改参数或者换工具。
+TOOL_REJECT_PREFIX = "工具调用被拒绝："
+
+
+def validate_tool_calls(
+    tool_calls: list[dict[str, Any]] | None,
+    allowed_names: set[str] | frozenset[str],
+) -> tuple[list[dict[str, Any]], list[tuple[dict[str, Any], str]]]:
+    """在执行前校验模型给出的 tool_calls。
+
+    Args:
+        tool_calls: AIMessage.tool_calls，形如
+            [{"name": "search_projects", "args": {...}, "id": "call_1"}]。
+        allowed_names: 本次运行里真正注册过的工具名集合。
+
+    Returns:
+        (valid, rejected)：可以直接交给 ToolNode 执行的调用，
+        以及 [(调用, 拒绝原因)]。
+
+    为什么必须在 ToolNode 之前拦一道：
+        ToolNode 对未知工具只会抛一条英文错误，而且它是**按名字找工具**的——
+        模型幻觉出来的名字如果恰好和别的工具前缀相同，很容易被误执行。
+        更关键的是 tool_call_id 缺失这一种：没有 id 就没法把结果回填成
+        ToolMessage，OpenAI 协议会直接拒绝下一轮请求，整条链路当场断掉。
+
+    为什么不做"直接抛异常"：
+        一次工具调用不合法，不该让整次分析白跑（那意味着用户等了 40 秒
+        拿到一个 500）。正确做法是把拒绝原因作为工具结果回灌给模型，
+        让它在下一轮自己改参数，同时由 MAX_TOOL_ROUNDS 兜住死循环。
+    """
+    valid: list[dict[str, Any]] = []
+    rejected: list[tuple[dict[str, Any], str]] = []
+
+    for call in tool_calls or []:
+        name = call.get("name")
+        call_id = call.get("id")
+        args = call.get("args")
+
+        if not call_id:
+            rejected.append((call, "缺少 tool_call_id，无法回填工具结果"))
+        elif not name or name not in allowed_names:
+            rejected.append(
+                (call, f"工具名非法：{name!r}，允许的工具是 {sorted(allowed_names)}")
+            )
+        elif not isinstance(args, dict):
+            rejected.append((call, "参数不是 JSON 对象"))
+        else:
+            valid.append(call)
+
+    return valid, rejected
+
+
 def _to_sync_tool(tool):
     """
     MCP 工具只实现异步调用（_arun），ToolNode 同步执行时会报

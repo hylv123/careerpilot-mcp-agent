@@ -3,7 +3,7 @@ import random
 import threading
 
 from langgraph.graph import END, START, StateGraph
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langgraph.prebuilt import ToolNode
@@ -17,7 +17,12 @@ from loguru import logger
 from .schemas import JobAnalysisGraph, ResumeBulletList, InterviewQuestionList
 from .llm import get_ds_chat_model
 from .state import State
-from .mcp_tools import get_mcp_tools, is_tool_error
+from .mcp_tools import (
+    TOOL_REJECT_PREFIX,
+    get_mcp_tools,
+    is_tool_error,
+    validate_tool_calls,
+)
 
 
 MAX_TOOL_ROUNDS = 3
@@ -639,11 +644,65 @@ def build_graph():
         为什么不直接用 ToolNode 当节点：
             需要在每次工具执行后把 tool_rounds 加一，
             路由函数才能判断是否已经调用太多次。
+
+        为什么执行前要先校验一遍：
+            模型给出的 tool_calls 是"自然语言生成的 JSON"，不是可信输入——
+            工具名可能是幻觉出来的，args 可能不是对象，tool_call_id 可能缺失。
+            缺 id 的那一种最致命：没有它就没法回填 ToolMessage，
+            OpenAI 协议会拒绝下一轮请求，整条链路当场断掉。
+            校验通过的执行，没通过的把原因回灌给模型，让它自己改。
         """
-        result = _tool_node.invoke(state)
+        last = state["messages"][-1]
+        calls = getattr(last, "tool_calls", None) or []
         rounds = state.get("tool_rounds", 0) + 1
-        logger.info("[agent] 工具调用第 {} 轮", rounds)
-        return {**result, "tool_rounds": rounds}
+
+        valid, rejected = validate_tool_calls(calls, set(tool_map))
+        for call, reason in rejected:
+            logger.warning(
+                "[tool-guard] 拒绝工具调用 name={} id={}：{}",
+                call.get("name"),
+                call.get("id"),
+                reason,
+            )
+
+        result_msgs: list = []
+        if valid:
+            if rejected:
+                # ToolNode 会按名字把所有 tool_calls 都执行一遍，所以这里只把那批
+                # 合法的交给它；历史里保留原来的 AIMessage，稍后我们自己把被拒的
+                # 那几条也补上 ToolMessage，保证"每个 tool_call 都有且只有一个回应"。
+                keep = {call["id"] for call in valid}
+                pruned = last.model_copy(
+                    update={
+                        "tool_calls": [
+                            call
+                            for call in getattr(last, "tool_calls", [])
+                            if call.get("id") in keep
+                        ]
+                    }
+                )
+                run_state = {**state, "messages": [*state["messages"][:-1], pruned]}
+            else:
+                run_state = state
+
+            result = _tool_node.invoke(run_state)
+            result_msgs.extend(result.get("messages", []))
+
+        for call, reason in rejected:
+            if not call.get("id"):
+                # 没有 id 就无法构造合法的 ToolMessage，只能丢弃并留痕
+                continue
+            result_msgs.append(
+                ToolMessage(
+                    content=f"{TOOL_REJECT_PREFIX}{reason}",
+                    tool_call_id=call["id"],
+                    status="error",
+                )
+            )
+
+        logger.info("[agent] 工具调用第 {} 轮（执行 {} 个，拒绝 {} 个）",
+                    rounds, len(valid), len(rejected))
+        return {"messages": result_msgs, "tool_rounds": rounds}
 
     def route_after_agent(state: State) -> str | list[str]:
         """决定 agent 节点之后去哪。

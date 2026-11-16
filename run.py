@@ -1,4 +1,11 @@
-"""Command-line entry point for CareerPilot MCP Agent."""
+"""Command-line entry point for CareerPilot MCP Agent.
+
+命令行、HTTP 接口、worker 共用同一个执行入口 `tasks.runner.run_analysis`。
+为什么不各自 build_graph()：
+    以前 CLI 自己建图 + 手写一份初始 state，API/worker 走 build_initial_state，
+    两边很快就漂了——最典型的是递归上限：接口显式给 50，CLI 用默认的 25，
+    同一个 JD 可能"命令行跑不通、接口能跑通"。现在只有一条路径。
+"""
 
 from __future__ import annotations
 
@@ -6,8 +13,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from agent.graph import build_graph
 from agent.logging_setup import setup_logging
+from tasks.runner import run_analysis
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,21 +39,9 @@ def main() -> int:
     if not jd or not jd.strip():
         raise SystemExit("岗位描述不能为空")
 
-    app = build_graph()
-    result = app.invoke(
-        {
-            "user_input": jd.strip(),
-            "analysis": {},
-            "evidence": [],
-            "report_text": "",
-            "resume_bullets": [],
-            "interview_questions": [],
-            "saved": False,
-            "save_error": "",
-            "messages": [],
-            "tool_rounds": 0,
-        }
-    )
+    # 与 API / worker 共用同一个执行入口：
+    # 初始 state、递归上限、结果投影都只有一份定义，不会再出现两条路径行为不一致。
+    result = run_analysis(jd.strip())
 
     # 不再遍历 messages 打印：report / rewrite / questions 是并行执行的，
     # messages 里这三条的先后次序不确定，直接打印会导致每次输出顺序都不一样。

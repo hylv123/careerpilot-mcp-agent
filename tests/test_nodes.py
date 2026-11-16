@@ -1,6 +1,6 @@
 """节点级测试：只测"节点收什么、给什么、拼出来的 prompt 对不对"。
 
-不调真实模型：用假 chain 拦在 `invoke_structured` / `retrieve_agentic` 前，
+不调真实模型：用假 chain 拦在 `invoke_structured` / `search_for_match` 前，
 断言的是**节点自身的契约**，而不是模型输出质量。
 
 覆盖：
@@ -90,7 +90,7 @@ class MatchEvidenceTests(unittest.TestCase):
             captured.update({"keywords": keywords, "k": k})
             return list(EVIDENCE)
 
-        with patch.object(graph, "retrieve_agentic", side_effect=fake_retrieve):
+        with patch.object(graph, "search_for_match", side_effect=fake_retrieve):
             update = graph.match_evidence(_state())
 
         self.assertEqual(captured["keywords"], ["RAG", "LangChain"])
@@ -98,7 +98,7 @@ class MatchEvidenceTests(unittest.TestCase):
         self.assertEqual(update["evidence"], EVIDENCE)
 
     def test_message_contains_json_not_repr(self) -> None:
-        with patch.object(graph, "retrieve_agentic", return_value=list(EVIDENCE)):
+        with patch.object(graph, "search_for_match", return_value=list(EVIDENCE)):
             update = graph.match_evidence(_state())
 
         role, content = update["messages"][0]
@@ -110,7 +110,7 @@ class MatchEvidenceTests(unittest.TestCase):
 
     def test_empty_retrieval_still_returns_message(self) -> None:
         # 检索为空要能继续走（否则下游 report 会拿到 None）
-        with patch.object(graph, "retrieve_agentic", return_value=[]):
+        with patch.object(graph, "search_for_match", return_value=[]):
             update = graph.match_evidence(_state())
 
         self.assertEqual(update["evidence"], [])

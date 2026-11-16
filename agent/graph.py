@@ -6,9 +6,10 @@ from langgraph.graph import END, START, StateGraph
 from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.tools import StructuredTool
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
-from knowledge.retrieve import retrieve_agentic
+from knowledge.router import resolve_mode, search_for_match, search_evidence
 from typing import Any, TypeVar, ParamSpec
 from collections.abc import Callable
 from functools import wraps
@@ -23,6 +24,7 @@ from .mcp_tools import (
     is_tool_error,
     validate_tool_calls,
 )
+from .safety import UNTRUSTED_NOTICE, drop_ungrounded, evidence_block, wrap_untrusted
 
 
 MAX_TOOL_ROUNDS = 3
@@ -44,6 +46,114 @@ UPSTREAM_ERROR_HINTS = (
 # 它们都只依赖 analysis + evidence，彼此没有数据依赖，所以可以并行：
 # 串行耗时是三者之和（早期模型实测约 95s），并行后是三者中最大的那个（约 45s）。
 GENERATE_NODES: list[str] = ["report", "rewrite", "questions"]
+
+# 工具结果回流 evidence 时的上限与前缀。
+# 为什么要回流：report / rewrite / questions 三个生成节点只读 analysis + evidence，
+#   不读 messages。工具执行结果如果只留在消息流里，就永远到不了报告——
+#   agent 和 tools 两个节点会变成"只花时间、不产出"的装饰。
+# 为什么要前缀：引用校验要求 generated_sources 必须能在 evidence 的 source 里找到；
+#   加 `tool:` 前缀既让模型知道这条来自工具而不是知识库，也避免和文件路径混淆。
+TOOL_EVIDENCE_PREFIX = "tool:"
+TOOL_EVIDENCE_MAX_CHARS = 2000
+
+# 本地检索工具的名字。它不在 MCP 的三个 Server 里，直接跑在主进程：
+#   检索和 match 节点共享同一份 FAISS 索引与 Embedding 客户端，
+#   走 MCP 只会多一次序列化和一处故障点，没有收益。
+SEARCH_TOOL_NAME = "search_evidence"
+
+
+def _parse_search_hits(text: str) -> list[dict[str, Any]]:
+    """把检索工具返回的 JSON 解析成片段列表；解析不了就返回空列表。"""
+    try:
+        payload = json.loads(text)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(payload, list):
+        return []
+    return [item for item in payload if isinstance(item, dict)]
+
+
+def _tool_messages_to_evidence(
+    tool_calls: list[dict[str, Any]],
+    messages: list[Any],
+    existing: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """把本轮工具返回的内容转成 evidence 条目。
+
+    Args:
+        tool_calls: 本轮 AIMessage.tool_calls，用来把 tool_call_id 映射回工具名。
+        messages: ToolNode 返回的 ToolMessage 列表。
+        existing: 已有的 evidence，用来去重（同一条工具结果不重复进上下文）。
+
+    Returns:
+        新增的 evidence 条目，格式与知识库召回保持一致（content/source/score）。
+
+    为什么要过滤 is_tool_error：
+        失败降级成的文本（"MCP 工具调用失败：…"）不是事实依据，
+        写进 evidence 会污染引用来源，让报告引用一条错误信息。
+
+    为什么要对 search_evidence 单独处理：
+        它返回的是"带 source 的片段数组"，如果整段当成一条 evidence，
+        引用来源会退化成 `tool:search_evidence`，模型就分不清结论到底来自
+        简历还是某个项目了。拆成逐条，才能保住原来的 source（文件名）。
+    """
+    name_by_id = {
+        call.get("id"): call.get("name")
+        for call in tool_calls
+        if call.get("id")
+    }
+    seen = {str(item.get("content", "")) for item in existing}
+    added: list[dict[str, Any]] = []
+
+    for msg in messages:
+        if not isinstance(msg, ToolMessage):
+            continue
+        raw = msg.content
+        if isinstance(raw, list):
+            text = "\n".join(
+                str(block.get("text", "")) if isinstance(block, dict) else str(block)
+                for block in raw
+            )
+        else:
+            text = str(raw)
+        text = text.strip()
+
+        if not text or is_tool_error(text):
+            continue
+
+        name = name_by_id.get(msg.tool_call_id, "unknown")
+        if name == SEARCH_TOOL_NAME:
+            for hit in _parse_search_hits(text):
+                content = str(hit.get("content", "")).strip()
+                if not content or content in seen:
+                    continue
+                seen.add(content)
+                added.append(
+                    {
+                        "content": content[:TOOL_EVIDENCE_MAX_CHARS],
+                        "source": str(hit.get("source") or f"{TOOL_EVIDENCE_PREFIX}{name}"),
+                        "source_path": str(
+                            hit.get("source_path") or f"{TOOL_EVIDENCE_PREFIX}{name}"
+                        ),
+                        "score": float(hit.get("score", 0.0) or 0.0),
+                    }
+                )
+            continue
+
+        if text in seen:
+            continue
+
+        seen.add(text)
+        added.append(
+            {
+                "content": text[:TOOL_EVIDENCE_MAX_CHARS],
+                "source": f"{TOOL_EVIDENCE_PREFIX}{name}",
+                "source_path": f"{TOOL_EVIDENCE_PREFIX}{name}",
+                "score": 0.0,
+            }
+        )
+
+    return added
 
 # 日志不在这里初始化：`logger.add` 会在导入期打开文件，
 # 目录只读时会让 `import agent.graph` 直接抛 PermissionError。
@@ -324,7 +434,9 @@ def match_evidence(state: State) -> dict[str, Any]:
         query,
     )
 
-    evidence = retrieve_agentic(keywords, 4)
+    # 检索模式由规模自动决定：小语料直读（不丢证据），大语料才走向量。
+    # 见 knowledge/router.py 与 CAREERPILOT_RETRIEVAL_MODE。
+    evidence = search_for_match(keywords, 4)
 
     logger.info(
         "[RAG] 检索完成，命中{}条",
@@ -346,10 +458,11 @@ def match_evidence(state: State) -> dict[str, Any]:
         )
 
     context = (
+        f"{UNTRUSTED_NOTICE}\n\n"
         "请根据下面的岗位分析和匹配经历，生成一份求职匹配报告，每段必须标注来源。"
         "如果需要简历、项目等补充信息，可以先调用可用工具获取，再输出报告。\n\n"
-        f"岗位分析：\n{json.dumps(state['analysis'], ensure_ascii=False)}\n\n"
-        f"匹配经历：\n{json.dumps(evidence, ensure_ascii=False)}"
+        f"岗位分析：\n{wrap_untrusted(json.dumps(state['analysis'], ensure_ascii=False), 'job_analysis')}\n\n"
+        f"匹配经历：\n{evidence_block(evidence)}"
     )
     return {"evidence": evidence, "messages": [("user", context)]}
 
@@ -358,7 +471,7 @@ def report(state: State) -> dict[str, Any]:
     """生成报告（带引用）"""
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", "你是求职顾问。基于岗位要求和匹配经历生成报告，每段必须标注来源。"),
+            ("system", "你是求职顾问。基于岗位要求和匹配经历生成报告，每段必须标注来源。" + UNTRUSTED_NOTICE),
             ("human", "岗位分析：{analysis}\n\n匹配经历：{evidence}"),
         ]
     )
@@ -369,7 +482,7 @@ def report(state: State) -> dict[str, Any]:
         # rewrite_resume / gen_questions 一直是这么做的，这里以前漏了。
         inputs={
             "analysis": json.dumps(state["analysis"], ensure_ascii=False),
-            "evidence": json.dumps(state["evidence"], ensure_ascii=False),
+            "evidence": evidence_block(state["evidence"]),
         },
         operation_name="report"
     )
@@ -392,7 +505,8 @@ def rewrite_resume(state: State):
                 "请根据岗位分析和匹配经历生成1到3条简历要点。"
                 "不得编造不存在的经历。"
                 "每条要点的 evidence_source 必须来自匹配经历中的 source 字段。"
-                "必须通过指定的结构化工具返回结果，不要返回普通文本段落。",
+                "必须通过指定的结构化工具返回结果，不要返回普通文本段落。"
+                + UNTRUSTED_NOTICE,
             ),
             (
                 "human",
@@ -413,17 +527,22 @@ def rewrite_resume(state: State):
                 state["analysis"],
                 ensure_ascii=False,
             ),
-            "evidence": json.dumps(
-                state["evidence"],
-                ensure_ascii=False,
-            ),
+            "evidence": evidence_block(state["evidence"]),
         },
         ResumeBulletList
     )
 
-    bullet_dicts = [bullet.model_dump() for bullet in result.bullets]
+    # 输出侧校验：引用来源对不上本轮证据的条目直接丢弃。
+    # 模型偶发会写一个看着很像、但本轮根本没召回的来源；
+    # 这种"编出来的出处"比少一条要点危险得多。
+    bullet_dicts = drop_ungrounded(
+        [bullet.model_dump() for bullet in result.bullets],
+        lambda item: item.get("evidence_source", ""),
+        state["evidence"],
+        kind="简历要点",
+    )
     bullet_text = "\n".join(
-        f"- {bullet.bullet}\n 来源: {bullet.evidence_source}" for bullet in result.bullets
+        f"- {item['bullet']}\n 来源: {item['evidence_source']}" for item in bullet_dicts
     )
 
     return {
@@ -447,7 +566,8 @@ def gen_questions(state: State):
                 "每道题必须包含回答要点，并引用匹配经历中的真实来源。"
                 "不得编造项目或经历。"
                 "evidence_source 必须来自匹配经历的 source 字段。"
-                "必须通过指定的结构化工具返回结果，不要返回普通文本段落。",
+                "必须通过指定的结构化工具返回结果，不要返回普通文本段落。"
+                + UNTRUSTED_NOTICE,
             ),
             (
                 "human",
@@ -468,23 +588,26 @@ def gen_questions(state: State):
                 state["analysis"],
                 ensure_ascii=False,
             ),
-            "evidence": json.dumps(
-                state["evidence"],
-                ensure_ascii=False,
-            ),
+            "evidence": evidence_block(state["evidence"]),
         },
         InterviewQuestionList
     )
 
-    questions_dicts = [question.model_dump() for question in result.questions]
+    # 输出侧校验：同简历要点，来源对不上证据的题目直接丢弃（宁缺毋滥）。
+    questions_dicts = drop_ungrounded(
+        [question.model_dump() for question in result.questions],
+        lambda item: item.get("evidence_source", ""),
+        state["evidence"],
+        kind="面试题",
+    )
 
     questions_sections: list[str] = []
-    for idx, ques in enumerate(result.questions, start=1):
-        ans_text = "\n".join(f"- {point}" for point in ques.answer_points)
+    for idx, ques in enumerate(questions_dicts, start=1):
+        ans_text = "\n".join(f"- {point}" for point in ques["answer_points"])
         questions_sections.append(
-            f"### Q{idx}: {ques.question}\n\n"
+            f"### Q{idx}: {ques['question']}\n\n"
             f"{ans_text}\n\n"
-            f"来源：{ques.evidence_source}"
+            f"来源：{ques['evidence_source']}"
         )
     display_text = "\n\n".join(questions_sections)
 
@@ -551,6 +674,29 @@ def save_record_impl(state: State, save_tool: Any) -> dict[str, Any]:
     }
 
 
+def _build_search_tool() -> StructuredTool:
+    """把知识库检索包装成一个模型可调用的工具。
+
+    为什么需要它：
+        match 节点只在流程开头检索一次。agent 后面发现证据不足时没有任何
+        手段再查——那就不算 agentic。暴露成工具后，模型可以自己判断
+        "要不要再查一次"，死循环由 MAX_TOOL_ROUNDS 兜住。
+
+    为什么 description 写得这么具体：
+        模型选不选这个工具，几乎完全取决于 description。这里明确"什么时候该调、
+        什么时候不该调"，否则它要么永远不调，要么每轮都调。
+    """
+    return StructuredTool.from_function(
+        func=search_evidence,
+        name=SEARCH_TOOL_NAME,
+        description=(
+            "按语义检索候选人的简历与项目经历，返回带来源(source)的片段列表。"
+            "当现有证据不足以支撑结论、或需要确认某个技能/项目是否真实存在时调用；"
+            "证据已经足够时不要调用。query 用中文描述要查什么，k 为返回条数（默认 4）。"
+        ),
+    )
+
+
 def build_graph():
     try:
         logger.info("[mcp] 开始发现 MCP 工具")
@@ -573,6 +719,16 @@ def build_graph():
             e,
         )
         tools = []
+
+    # 本地检索工具：和 9 个 MCP 工具合并后一起 bind_tools。
+    # 为什么走本地而不是 MCP：检索和 match 共享同一份 FAISS 索引与 Embedding
+    # 客户端，包成 MCP Server 只会多一次序列化和一处故障点，没有收益。
+    # 为什么直读模式下不暴露它：所有片段已经在上下文里了，模型再调一次
+    # 只会把整库重复塞进消息流，纯浪费 token。
+    if resolve_mode() != "direct":
+        tools = [*tools, _build_search_tool()]
+    else:
+        logger.info("[mcp] 直读模式：不暴露检索工具（片段已全量在上下文中）")
 
     llm_with_tools = _get_llm(TIMEOUT_AGENT).bind_tools(tools)
     tool_map = {tool.name: tool for tool in tools}
@@ -666,6 +822,7 @@ def build_graph():
             )
 
         result_msgs: list = []
+        evidence: list[dict[str, Any]] | None = None
         if valid:
             if rejected:
                 # ToolNode 会按名字把所有 tool_calls 都执行一遍，所以这里只把那批
@@ -686,7 +843,20 @@ def build_graph():
                 run_state = state
 
             result = _tool_node.invoke(run_state)
-            result_msgs.extend(result.get("messages", []))
+            tool_messages = result.get("messages", [])
+            result_msgs.extend(tool_messages)
+
+            # 工具查到的内容必须回流到 evidence，否则三个生成节点看不到它。
+            merged = _tool_messages_to_evidence(
+                calls, tool_messages, state.get("evidence", [])
+            )
+            if merged:
+                evidence = [*state.get("evidence", []), *merged]
+                logger.info(
+                    "[tool-guard] 本轮工具结果回流 evidence {} 条：{}",
+                    len(merged),
+                    [item["source"] for item in merged],
+                )
 
         for call, reason in rejected:
             if not call.get("id"):
@@ -702,7 +872,10 @@ def build_graph():
 
         logger.info("[agent] 工具调用第 {} 轮（执行 {} 个，拒绝 {} 个）",
                     rounds, len(valid), len(rejected))
-        return {"messages": result_msgs, "tool_rounds": rounds}
+        updates: dict[str, Any] = {"messages": result_msgs, "tool_rounds": rounds}
+        if evidence is not None:
+            updates["evidence"] = evidence
+        return updates
 
     def route_after_agent(state: State) -> str | list[str]:
         """决定 agent 节点之后去哪。

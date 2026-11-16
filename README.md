@@ -123,6 +123,33 @@ Invoke-RestMethod -Uri "http://localhost:8000/tasks/$($r.task_id)"
 
 工具发现失败时工作流降级为空工具模式，仍能产出基于检索的结果；此时最终消息会说明岗位未保存。
 
+> 除上表 9 个 MCP 工具外，还有 1 个**本地**检索工具 `search_evidence`（不跨进程，与 match 节点共享同一份 FAISS 索引）。它在**直读模式**下不会被绑定——片段已经全量在上下文里，再调一次只会重复塞 token。
+
+## 检索模式（按规模自适应）
+
+单用户的简历+项目切完只有几十个片段、约 6k token，比上下文窗口小两个数量级；这个规模下检索只会**丢证据**。所以检索被做成可插拔的：
+
+| 模式 | 触发条件 | 行为 |
+| --- | --- | --- |
+| `direct`（默认） | 片段数 ≤ 阈值（默认 200） | 全量片段进上下文，召回 100%，不建索引也能跑 |
+| `vector` | 片段数 > 阈值 | FAISS 向量检索 + 按需查询改写 |
+| `hybrid` | 显式指定 | 向量 + BM25 两路召回，RRF 融合 |
+
+```powershell
+$env:CAREERPILOT_RETRIEVAL_MODE = "vector"        # auto / direct / vector / hybrid
+$env:CAREERPILOT_DIRECT_READ_THRESHOLD = "200"
+```
+
+**为什么默认不用检索**（`eval/ablation_results.json`，8 条标注、k=4）：
+
+| 指标 | vector | bm25 | rrf |
+| --- | --- | --- | --- |
+| Recall@4 | 0.434 | 0.207 | 0.368 |
+| Precision@4 | 0.531 | 0.250 | 0.438 |
+| MRR | 0.729 | 0.490 | 0.771 |
+
+30 个片段这个规模下，BM25 单路明显更差，RRF 融合是拿召回换排名（MRR 升、Recall 降）。结论：**这个语料规模不该上 BM25**；要上，前置条件是先把语料扩到几千片段、标注集扩到几十条。
+
 ## 评测
 
 **端到端（20 例，`eval/results_2026-11-03.json`，当前代码 + `deepseek-flash`）**

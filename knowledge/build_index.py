@@ -10,6 +10,7 @@
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,6 +18,14 @@ from langchain_community.document_loaders import TextLoader
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+# 允许用 `python knowledge/build_index.py` 直接跑：那时 sys.path 上是 knowledge/，
+# 拿不到 agent 包。和 knowledge/retrieve.py 保持同一套处理。
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from agent.safety import redact_sensitive
 
 load_dotenv()
 
@@ -51,9 +60,20 @@ def _load_docs() -> list:
         files += sorted(PRIVATE_DIR.glob("*.md"))
 
     docs = []
+    redaction_counts: dict[str, int] = {}
     for path in files:
         # 中文文件显式 UTF-8
-        docs.extend(TextLoader(str(path), encoding="utf-8").load())
+        loaded = TextLoader(str(path), encoding="utf-8").load()
+        for doc in loaded:
+            # 建库前就地脱敏：敏感信息一旦进了向量库，就会随检索结果
+            # 一路流进上下文和最终报告，展示层再打码已经来不及了。
+            cleaned, hits = redact_sensitive(doc.page_content, redaction_counts)
+            if hits:
+                print(f"  脱敏 {path.name}：{hits}")
+            doc.page_content = cleaned
+        docs.extend(loaded)
+    if redaction_counts:
+        print(f"建库前脱敏汇总：{redaction_counts}")
     return docs
 
 

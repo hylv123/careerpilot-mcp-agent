@@ -1,6 +1,4 @@
 """Redis 任务存储层：任务队列、状态、幂等去重与限流。
-
-用 Stream + 消费组而不是 List：List 的 BRPOP 取出即删除，worker 崩溃会丢任务；
 Stream 的未确认消息留在 PEL，可以用 XAUTOCLAIM 转给其他 worker 重做。
 """
 
@@ -18,7 +16,6 @@ from redis.exceptions import RedisError
 
 # ---------- key 命名 ----------
 # 统一前缀：将来一个 Redis 上跑多个环境时，可以按前缀整体清理，
-# 也不会和别人的 key 撞车。
 KEY_PREFIX = "careerpilot"
 QUEUE_KEY = f"{KEY_PREFIX}:queue"        # Stream：任务队列
 TASK_KEY = f"{KEY_PREFIX}:task:{{}}"     # Hash：任务状态与结果
@@ -33,9 +30,7 @@ STATUS_DONE = "done"
 STATUS_FAILED = "failed"
 
 # ---------- 默认时间 ----------
-# 结果保留 24 小时。为什么必须设 TTL：
-#   每条结果里都有一份完整的报告文本，几百条就能吃掉几百 MB。
-#   它是"可重算的临时物"，不是"唯一副本"，到期就让它自己消失。
+# 结果保留 24 小时。
 DEFAULT_RESULT_TTL = 24 * 3600
 DEFAULT_DEDUP_TTL = 24 * 3600
 DEFAULT_RATE_WINDOW = 60

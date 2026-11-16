@@ -1,0 +1,329 @@
+{
+  "summary": {
+    "cases": 8,
+    "k": 4,
+    "vector_recall@4": 0.4337797619047619,
+    "vector_precision@4": 0.53125,
+    "vector_mrr": 0.7291666666666667,
+    "bm25_recall@4": 0.20654761904761904,
+    "bm25_precision@4": 0.25,
+    "bm25_mrr": 0.48958333333333337,
+    "rrf_recall@4": 0.3681547619047619,
+    "rrf_precision@4": 0.4375,
+    "rrf_mrr": 0.7708333333333334
+  },
+  "rows": [
+    {
+      "id": "cn-sz-01",
+      "match_level": "high",
+      "query": "LLM RAG Agent Function Calling LangChain",
+      "relevant_count": 6,
+      "vector": {
+        "ids": [
+          13,
+          25,
+          1,
+          21
+        ],
+        "recall@4": 0.5,
+        "precision@4": 0.75,
+        "mrr": 1.0
+      },
+      "bm25": {
+        "ids": [
+          1,
+          0,
+          13,
+          16
+        ],
+        "recall@4": 0.3333333333333333,
+        "precision@4": 0.5,
+        "mrr": 1.0
+      },
+      "rrf": {
+        "ids": [
+          1,
+          13,
+          21,
+          0
+        ],
+        "recall@4": 0.3333333333333333,
+        "precision@4": 0.5,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "cn-sz-02",
+      "match_level": "high",
+      "query": "LangChain RAG Agent 工具调用 Prompt工程",
+      "relevant_count": 7,
+      "vector": {
+        "ids": [
+          0,
+          1,
+          21,
+          20
+        ],
+        "recall@4": 0.2857142857142857,
+        "precision@4": 0.5,
+        "mrr": 1.0
+      },
+      "bm25": {
+        "ids": [
+          0,
+          16,
+          21,
+          13
+        ],
+        "recall@4": 0.14285714285714285,
+        "precision@4": 0.25,
+        "mrr": 1.0
+      },
+      "rrf": {
+        "ids": [
+          0,
+          21,
+          1,
+          13
+        ],
+        "recall@4": 0.2857142857142857,
+        "precision@4": 0.5,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "cn-sz-03",
+      "match_level": "high",
+      "query": "智能体 Agent架构 规划决策 记忆 工具调用",
+      "relevant_count": 5,
+      "vector": {
+        "ids": [
+          21,
+          22,
+          13,
+          1
+        ],
+        "recall@4": 0.4,
+        "precision@4": 0.5,
+        "mrr": 0.3333333333333333
+      },
+      "bm25": {
+        "ids": [
+          21,
+          22,
+          18,
+          25
+        ],
+        "recall@4": 0.2,
+        "precision@4": 0.25,
+        "mrr": 0.25
+      },
+      "rrf": {
+        "ids": [
+          21,
+          22,
+          13,
+          18
+        ],
+        "recall@4": 0.2,
+        "precision@4": 0.25,
+        "mrr": 0.3333333333333333
+      }
+    },
+    {
+      "id": "cn-sz-04",
+      "match_level": "high",
+      "query": "AI Agent RAG知识检索 MCP Server 工具调用 向量检索",
+      "relevant_count": 6,
+      "vector": {
+        "ids": [
+          13,
+          25,
+          16,
+          23
+        ],
+        "recall@4": 0.16666666666666666,
+        "precision@4": 0.25,
+        "mrr": 0.5
+      },
+      "bm25": {
+        "ids": [
+          13,
+          16,
+          25,
+          1
+        ],
+        "recall@4": 0.3333333333333333,
+        "precision@4": 0.5,
+        "mrr": 0.3333333333333333
+      },
+      "rrf": {
+        "ids": [
+          13,
+          16,
+          25,
+          1
+        ],
+        "recall@4": 0.3333333333333333,
+        "precision@4": 0.5,
+        "mrr": 0.3333333333333333
+      }
+    },
+    {
+      "id": "cn-online-05",
+      "match_level": "high",
+      "query": "LangGraph MCP RAG 向量检索 FastAPI",
+      "relevant_count": 8,
+      "vector": {
+        "ids": [
+          25,
+          13,
+          23,
+          2
+        ],
+        "recall@4": 0.375,
+        "precision@4": 0.75,
+        "mrr": 1.0
+      },
+      "bm25": {
+        "ids": [
+          18,
+          16,
+          22,
+          20
+        ],
+        "recall@4": 0.0,
+        "precision@4": 0.0,
+        "mrr": 0.0
+      },
+      "rrf": {
+        "ids": [
+          25,
+          13,
+          16,
+          23
+        ],
+        "recall@4": 0.25,
+        "precision@4": 0.5,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "cn-cd-06",
+      "match_level": "high",
+      "query": "Multi-Agent 工作流 工具调用 MCP协议 RAG全链路",
+      "relevant_count": 7,
+      "vector": {
+        "ids": [
+          25,
+          13,
+          23,
+          21
+        ],
+        "recall@4": 0.14285714285714285,
+        "precision@4": 0.25,
+        "mrr": 1.0
+      },
+      "bm25": {
+        "ids": [
+          21,
+          13,
+          25,
+          27
+        ],
+        "recall@4": 0.14285714285714285,
+        "precision@4": 0.25,
+        "mrr": 0.3333333333333333
+      },
+      "rrf": {
+        "ids": [
+          25,
+          13,
+          21,
+          16
+        ],
+        "recall@4": 0.14285714285714285,
+        "precision@4": 0.25,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "cn-jn-07",
+      "match_level": "low",
+      "query": "Java Spring 后端服务 接口设计 Function Call",
+      "relevant_count": 5,
+      "vector": {
+        "ids": [
+          16,
+          1,
+          0,
+          23
+        ],
+        "recall@4": 0.6,
+        "precision@4": 0.75,
+        "mrr": 0.5
+      },
+      "bm25": {
+        "ids": [
+          16,
+          20,
+          14,
+          5
+        ],
+        "recall@4": 0.0,
+        "precision@4": 0.0,
+        "mrr": 0.0
+      },
+      "rrf": {
+        "ids": [
+          16,
+          1,
+          20,
+          0
+        ],
+        "recall@4": 0.4,
+        "precision@4": 0.5,
+        "mrr": 0.5
+      }
+    },
+    {
+      "id": "cn-gen-08",
+      "match_level": "low",
+      "query": "SQL 数据清洗 报表 统计分析 可视化",
+      "relevant_count": 2,
+      "vector": {
+        "ids": [
+          24,
+          12,
+          6,
+          23
+        ],
+        "recall@4": 1.0,
+        "precision@4": 0.5,
+        "mrr": 0.5
+      },
+      "bm25": {
+        "ids": [
+          12,
+          28,
+          24,
+          8
+        ],
+        "recall@4": 0.5,
+        "precision@4": 0.25,
+        "mrr": 1.0
+      },
+      "rrf": {
+        "ids": [
+          12,
+          24,
+          28,
+          6
+        ],
+        "recall@4": 1.0,
+        "precision@4": 0.5,
+        "mrr": 1.0
+      }
+    }
+  ]
+}

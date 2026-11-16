@@ -15,6 +15,7 @@ from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 
 import agent.graph as graph
+from agent.safety import FENCE_BEGIN
 
 
 class ReportPromptTests(unittest.TestCase):
@@ -40,11 +41,17 @@ class ReportPromptTests(unittest.TestCase):
         analysis = captured["analysis"]
         evidence = captured["evidence"]
         self.assertIsInstance(analysis, str, "analysis 应该是 JSON 字符串，不是 dict")
-        self.assertIsInstance(evidence, str, "evidence 应该是 JSON 字符串，不是 list")
+        self.assertIsInstance(evidence, str, "evidence 应该是 JSON 字符串，不是 dict")
 
+        # evidence 现在还会被围栏包住（prompt 注入防护），先剥掉围栏再解析。
+        # 契约变成：外层是围栏，围栏内必须是合法 JSON，不能是 Python repr。
+        self.assertTrue(evidence.startswith(FENCE_BEGIN), "证据必须被围栏包住")
+        payload = evidence.split("\n", 1)[1].rsplit("\n", 1)[0]
+        parsed = json.loads(payload)
+        self.assertEqual(parsed[0]["source"], "项目经历.md")
+        self.assertIsNone(parsed[0]["flag"])
         # 能解析回原数据，且是合法 JSON（repr 会在这里炸）
         self.assertEqual(json.loads(analysis)["job_title"], "AI 实习生")
-        self.assertIsNone(json.loads(evidence)[0]["flag"])
         # 中文不转义，避免 prompt 里出现 \uXXXX
         self.assertIn("AI 实习生", analysis)
         self.assertNotIn("\\u", analysis)

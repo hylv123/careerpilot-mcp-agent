@@ -16,4 +16,7 @@ pydantic>=2.7,<3
 fastapi>=0.115
 uvicorn[standard]>=0.30
 redis>=5.0
+# 混合检索：BM25 稀疏召回 + 中文分词（knowledge/bm25.py、eval/ablation.py 依赖）
+rank_bm25>=0.2
+jieba>=0.42
 

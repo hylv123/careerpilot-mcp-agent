@@ -117,3 +117,4 @@ def retrieve_agentic(
         if hit["content"] not in seen
     ]
     return sorted(merged, key=lambda item: item.get("score", float("inf")))[:k]
+

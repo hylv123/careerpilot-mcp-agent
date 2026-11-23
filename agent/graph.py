@@ -10,12 +10,13 @@ from langchain_core.tools import StructuredTool
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
 from knowledge.router import resolve_mode, search_for_match, search_evidence
+from services.jobs import create_job
 from typing import Any, TypeVar, ParamSpec
 from collections.abc import Callable
 from functools import wraps
 from time import perf_counter, sleep
 from loguru import logger
-from .schemas import JobAnalysisGraph, ResumeBulletList, InterviewQuestionList
+from .schemas import JobAnalysisGraph, TailoredResume, InterviewQuestionList
 from .llm import get_ds_chat_model
 from .state import State
 from .mcp_tools import (
@@ -25,6 +26,9 @@ from .mcp_tools import (
     validate_tool_calls,
 )
 from .safety import UNTRUSTED_NOTICE, drop_ungrounded, evidence_block, wrap_untrusted
+from .grounding import evidence_corpus, filter_skills, sanitize_text, verify_bullets
+from services import atoms as atoms_service
+from .style import ANTI_AI_RULES, style_correction, style_issues
 
 
 MAX_TOOL_ROUNDS = 3
@@ -496,57 +500,134 @@ def report(state: State) -> dict[str, Any]:
 
 @trace_node("rewrite")
 def rewrite_resume(state: State):
-    """根据岗位要求和真实经历生成定制简历要点。"""
+    """按 JD 的硬性要求与偏好，生成一份可投递的定制简历（结构化）。
+
+    和早期版本的区别：
+        以前只产出 1~3 条要点，用户还得自己拼成简历；现在直接给出
+        headline / 概述 / 技能分组 / 按项目归组的要点，并且每条要点都挂到
+        一条真实的 JD 要求或偏好上——这就是"针对 JD 偏好编写"的可核对形态。
+
+    真实性由 `agent/grounding.py` 在模型之后判定，而不是靠提示词自觉：
+        来源、项目名、技能词、量化数字、对应要求，五项都要能在本轮证据里落地。
+    """
     prompt = ChatPromptTemplate.from_messages(
         [
             (
                 "system",
-                "你是一名简历优化顾问。"
-                "请根据岗位分析和匹配经历生成1到3条简历要点。"
-                "不得编造不存在的经历。"
-                "每条要点的 evidence_source 必须来自匹配经历中的 source 字段。"
-                "必须通过指定的结构化工具返回结果，不要返回普通文本段落。"
+                "你是一名只做真实改写的简历顾问。任务：把候选人的真实经历改写成"
+                "针对这个岗位的简历内容。\n"
+                "硬性规则（违反即作废）：\n"
+                "1. 只能使用『匹配经历』里已经出现的事实：项目、技术栈、职责、成果。"
+                "不得新增任何项目、公司、时间、技术或量化数字；\n"
+                "2. 允许调整顺序、突出与岗位相关的部分、把同一件事换成更贴近岗位措辞的表达；\n"
+                "3. 每条要点的 jd_requirement 必须逐字取自岗位分析里的 requirements 或 preferences；\n"
+                "4. 每条要点的 project 必须逐字取自匹配经历，evidence_source 必须是该经历的 source，"
+                "evidence_span 必须是从该经历里**逐字复制**的一段原文（10~80 字），"
+                "不得改写、不得用省略号、不得拼接两处；\n"
+                "4b. 主张强度不得高于原文：原文写「参与」，就不要写成「主导」「独立负责」「从 0 到 1」；\n"
+                "5. preferences 是岗位的加分项/偏好，有对应真实经历时优先写；没有就不要硬凑；\n"
+                "6. 技能列表按固定四类组织：编程语言 / AI核心技术 / 框架与工具 / 通用技能，"
+                "每类 3~6 个短词，只写匹配经历里真实出现过的技术；不要带括号解释，"
+                "不要写 Office、打字、上网这类无信息量的项，也不要把同义词拆成多条；\n"
+                "7. 每条项目要点的 summary 是 6~12 字的概括（如“服务化改造”“检索链路评测”），"
+                "bullet 要按“遇到什么问题/要做什么 → 怎么做的 → 结果或约束”的顺序叙述，"
+                "读起来像人在讲自己做过的事；禁止写成“使用了 A、B、C 技术”这种技能罗列；\n"
+                "7. 概述里不要写没有出处的比例、人数、时长等数字。\n"
+                + ANTI_AI_RULES
+                + "\n必须通过指定的结构化工具返回结果，不要返回普通文本段落。"
                 + UNTRUSTED_NOTICE,
             ),
             (
                 "human",
                 "岗位分析：{analysis}\n\n"
-                "匹配经历：{evidence}",
+                "匹配经历：{evidence}\n\n"
+                "已确认事实原子（优先引用）：\n{atoms_block}\n\n"
+                "{style_correction}",
             ),
         ]
     )
 
     chain = prompt | _get_llm(TIMEOUT_BULLETS).with_structured_output(
-        ResumeBulletList,
+        TailoredResume,
         method="function_calling",
     )
-    result = invoke_structured(
-        chain,
-        {
-            "analysis": json.dumps(
-                state["analysis"],
-                ensure_ascii=False,
-            ),
-            "evidence": evidence_block(state["evidence"]),
-        },
-        ResumeBulletList
+    approved = atoms_service.approved_experience_atoms()
+    atom_map = {atom["id"]: atom["span"] for atom in approved}
+    atoms_block = (
+        "\n".join(f"[{atom['id']}] {atom.get('project', '')}：{atom['span']}" for atom in approved)
+        or "（当前没有已确认的原子；只能从匹配经历里逐字摘录，atom_id 留空）"
     )
+    inputs = {
+        "analysis": json.dumps(
+            state["analysis"],
+            ensure_ascii=False,
+        ),
+        "evidence": evidence_block(state["evidence"]),
+        "atoms_block": atoms_block,
+        "style_correction": "",
+    }
+    result = invoke_structured(chain, inputs, TailoredResume)
 
-    # 输出侧校验：引用来源对不上本轮证据的条目直接丢弃。
-    # 模型偶发会写一个看着很像、但本轮根本没召回的来源；
-    # 这种"编出来的出处"比少一条要点危险得多。
-    bullet_dicts = drop_ungrounded(
+    # 去 AI 味：命中模板腔就带着"你犯了这些词"重写一次。
+    # 只重写一次——再多就是拿用户的 token 换一点文风，不划算。
+    issues = style_issues([result.headline, result.summary, *(b.bullet for b in result.bullets)])
+    retried = False
+    if issues:
+        logger.warning("[style] 首版命中 AI 腔：{}，重写一次", issues)
+        try:
+            retried_result = invoke_structured(
+                chain,
+                {**inputs, "style_correction": style_correction(issues)},
+                TailoredResume,
+            )
+        except Exception as exc:  # 重写失败不该让整条任务失败，首版仍可用
+            logger.warning("[style] 去 AI 味重写失败，保留首版：{}", exc)
+        else:
+            result = retried_result
+            retried = True
+            issues = style_issues(
+                [result.headline, result.summary, *(b.bullet for b in result.bullets)]
+            )
+
+    corpus = evidence_corpus(state["evidence"])
+    kept, _dropped = verify_bullets(
         [bullet.model_dump() for bullet in result.bullets],
-        lambda item: item.get("evidence_source", ""),
         state["evidence"],
-        kind="简历要点",
+        state["analysis"],
+        approved_atoms=atom_map,
     )
+    analysis = state.get("analysis", {})
+    fallback_headline = "针对该岗位的定制简历"
+
+    tailored = {
+        "headline": sanitize_text(result.headline, corpus, fallback=fallback_headline),
+        "summary": sanitize_text(result.summary, corpus, fallback=""),
+        "skill_groups": filter_skills(
+            [group.model_dump() for group in result.skill_groups], state["evidence"]
+        ),
+        "bullets": kept,
+        "style": {"issues": issues, "retried": retried},
+        "atom_stats": {
+            "approved": len(approved),
+            "cited": sum(1 for item in kept if str(item.get("atom_id", "")).strip()),
+            "total": len(kept),
+        },
+    }
+
+    # 兼容既有契约：接口与评测仍然读 resume_bullets（1~3 条）。
+    bullets = [
+        {"bullet": item["bullet"], "evidence_source": item["evidence_source"]}
+        for item in kept[:3]
+    ]
     bullet_text = "\n".join(
-        f"- {item['bullet']}\n 来源: {item['evidence_source']}" for item in bullet_dicts
+        f"- [{item.get('jd_requirement', '')}] {item['bullet']}\n"
+        f"  项目: {item.get('project', '')} / 来源: {item['evidence_source']}"
+        for item in kept
     )
 
     return {
-        "resume_bullets": bullet_dicts,
+        "tailored_resume": tailored,
+        "resume_bullets": bullets,
         "messages":[
             ("assistant", f"## 定制简历要点：\n{bullet_text}")
         ]
@@ -639,39 +720,42 @@ AGENT_SYSTEM = SystemMessage(
 )
 
 
-def save_record_impl(state: State, save_tool: Any) -> dict[str, Any]:
+def save_record_impl(state: State) -> dict[str, Any]:
     """把本次岗位写进 SQLite，并把"到底存没存成功"变成结构化字段。
+
+    走原生服务，不走 MCP：岗位是应用自己的数据，写它不需要跨进程。
+    以前这一步是 `save_job` 工具，代价是"子进程没起来/适配层吞异常"就会
+    整条岗位记录丢失；现在失败会直接抛异常，当场转成 saved=False。
 
     Args:
         state: 当前图状态。
-        save_tool: 已绑定的 save_job 工具；工具发现失败时为 None。
 
     Returns:
         含 saved / save_error / messages 三个键的部分状态。
 
     为什么不再把结果只塞进 messages：
-        messages 里的那句"已保存/暂时不可用"没有任何下游消费者会去判定，
+        messages 里的那句"已保存/失败"没有任何下游消费者会去判定，
         于是"岗位没写进库"和"写进去了"在接口层长得一模一样——
         任务状态是 done、报告也正常，用户以为记录上了，其实没有。
         静默丢数据比直接失败更难查，所以必须落成 saved 字段。
     """
-    if save_tool is None:
-        message = "投递记录未保存：save_job MCP 工具不可用"
+    analysis = state.get("analysis", {})
+    title = analysis.get("job_title") or "未识别岗位"
+    company = analysis.get("company") or "未识别公司"
+    try:
+        record = create_job(
+            title=title,
+            company=company,
+            jd=state["user_input"],
+            requirements=analysis.get("requirements", []),
+            preferences=analysis.get("preferences", []),
+        )
+    except Exception as exc:  # 磁盘满、库被锁、表结构坏掉都要落成可见失败
+        message = f"投递记录未保存：{exc}"
         return {"saved": False, "save_error": message, "messages": [("assistant", message)]}
 
-    analysis = state.get("analysis", {})
-    payload = {
-        "title": analysis.get("job_title") or "未识别岗位",
-        "company": analysis.get("company") or "未识别公司",
-        "jd": state["user_input"],
-    }
-    result = save_tool.invoke(payload)
-    ok = not is_tool_error(result)
-    return {
-        "saved": ok,
-        "save_error": "" if ok else str(result),
-        "messages": [("assistant", str(result))],
-    }
+    message = f"已保存岗位 #{record.get('id')}：{title} @ {company}"
+    return {"saved": True, "save_error": "", "messages": [("assistant", message)]}
 
 
 def _build_search_tool() -> StructuredTool:
@@ -720,7 +804,7 @@ def build_graph():
         )
         tools = []
 
-    # 本地检索工具：和 9 个 MCP 工具合并后一起 bind_tools。
+    # 本地检索工具：和 MCP 工具（简历 2 个 + 文档 2 个）合并后一起 bind_tools。
     # 为什么走本地而不是 MCP：检索和 match 共享同一份 FAISS 索引与 Embedding
     # 客户端，包成 MCP Server 只会多一次序列化和一处故障点，没有收益。
     # 为什么直读模式下不暴露它：所有片段已经在上下文里了，模型再调一次
@@ -775,7 +859,7 @@ def build_graph():
     @trace_node("save")
     def save_record(state: State) -> dict[str, Any]:
         """通过 job MCP 工具保存本次岗位，成功与否写进 saved / save_error。"""
-        return save_record_impl(state, tool_map.get("save_job"))
+        return save_record_impl(state)
 
     @trace_node("dispatch")
     def dispatch_generate(state: State) -> dict[str, Any]:
@@ -979,6 +1063,7 @@ if __name__ == "__main__":
         "evidence": [],
         "report_text": "",
         "resume_bullets": [],
+        "tailored_resume": {},
         "interview_questions": [],
         "saved": False,
         "save_error": "",

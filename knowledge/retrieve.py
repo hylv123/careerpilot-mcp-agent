@@ -39,6 +39,17 @@ def _get_embeddings():
     return _embeddings
 
 
+def reset_cache() -> None:
+    """丢弃进程内缓存的向量库与 embedding 实例。
+
+    重建索引后必须调用：否则当前进程还在用旧索引对象，
+    表现为"索引重建成功了，检索结果却还是旧的"。
+    """
+    global _store, _embeddings
+    _store = None
+    _embeddings = None
+
+
 def _get_store():
     global _store
     if _store is None:

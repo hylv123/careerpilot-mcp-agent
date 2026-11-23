@@ -1,14 +1,22 @@
 # Secrets and local configuration
 .env
 .env.local
+.env.*
+!.env.example
 
 # Python
 .venv/
+venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
 .pyright/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
 
 # Editors and operating systems
 .vscode/
@@ -20,8 +28,13 @@ Thumbs.db
 logs/
 output/
 tmp/
+*.log
 data/*.db
+data/*.db-*
+data/.reindex.lock
 data/resume.local.json
+data/evidence_atoms.json
+data/material_versions/
 
 # Rebuildable vector index
 knowledge/index/
@@ -29,3 +42,7 @@ knowledge/index/
 # Optional private candidate material
 knowledge/docs/private/
 
+# Local scratch
+*.bak
+*.orig
+*.rej

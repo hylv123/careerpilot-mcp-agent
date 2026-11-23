@@ -195,3 +195,322 @@ def analyze_sync(
     if resp.status_code == 200:
         return resp.json()
     raise ApiError(f"分析失败（HTTP {resp.status_code}）：{_detail(resp)}")
+
+
+def list_jobs(base_url: str = DEFAULT_BASE_URL, *, status: str = "", session: Any = None) -> list[dict[str, Any]]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/jobs", params={"status": status} if status else None, timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取岗位列表失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取岗位列表失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return list(resp.json())
+
+
+def update_job(job_id: int, changes: dict[str, Any], base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.patch(f"{base_url.rstrip('/')}/jobs/{job_id}", json=changes, timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"更新岗位失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"更新岗位失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def delete_job(job_id: int, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> None:
+    http = _http(session)
+    try:
+        resp = http.delete(f"{base_url.rstrip('/')}/jobs/{job_id}", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"删除岗位失败：{exc}") from exc
+    if resp.status_code == 404:
+        raise ApiError("岗位不存在，可能已被删除")
+    if resp.status_code != 204:
+        raise ApiError(f"删除岗位失败（HTTP {resp.status_code}）：{_detail(resp)}")
+
+
+# ---------------------------------------------------------------- 候选人资料
+
+def list_materials(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> list[dict[str, Any]]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/profile/materials", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取资料列表失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取资料列表失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return list(resp.json())
+
+
+def get_material(name: str, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/profile/materials/{name}", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取资料失败：{exc}") from exc
+    if resp.status_code == 404:
+        raise ApiError("资料不存在，可能已被删除")
+    if resp.status_code != 200:
+        raise ApiError(f"读取资料失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def create_material(name: str, content: str, base_url: str = DEFAULT_BASE_URL, *, note: str = "", session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.post(
+            f"{base_url.rstrip('/')}/profile/materials",
+            json={"name": name, "content": content, "note": note},
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        raise ApiError(f"新建资料失败：{exc}") from exc
+    if resp.status_code != 201:
+        raise ApiError(f"新建资料失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def save_material(name: str, content: str, base_url: str = DEFAULT_BASE_URL, *, note: str = "", session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.put(
+            f"{base_url.rstrip('/')}/profile/materials/{name}",
+            json={"content": content, "note": note},
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        raise ApiError(f"保存资料失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"保存资料失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def delete_material(name: str, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> None:
+    http = _http(session)
+    try:
+        resp = http.delete(f"{base_url.rstrip('/')}/profile/materials/{name}", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"删除资料失败：{exc}") from exc
+    if resp.status_code == 404:
+        raise ApiError("资料不存在，可能已被删除")
+    if resp.status_code != 204:
+        raise ApiError(f"删除资料失败（HTTP {resp.status_code}）：{_detail(resp)}")
+
+
+def list_material_versions(name: str, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> list[dict[str, Any]]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/profile/materials/{name}/versions", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取版本历史失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取版本历史失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return list(resp.json())
+
+
+def restore_material_version(name: str, version: str, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.post(
+            f"{base_url.rstrip('/')}/profile/materials/{name}/versions/{version}/restore",
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        raise ApiError(f"恢复版本失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"恢复版本失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def index_status(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/profile/index-status", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取索引状态失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取索引状态失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def reindex(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    """重建索引可能要十几秒到几分钟，超时给足。"""
+    http = _http(session)
+    try:
+        resp = http.post(f"{base_url.rstrip('/')}/profile/reindex", timeout=600)
+    except requests.RequestException as exc:
+        raise ApiError(f"重建索引失败：{exc}") from exc
+    if resp.status_code == 409:
+        raise ApiError("已有重建任务在执行，请稍后再试")
+    if resp.status_code != 200:
+        raise ApiError(f"重建索引失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+# ---------------------------------------------------------------- 事实台账
+
+def facts(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> list[dict[str, Any]]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/facts", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取事实台账失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取事实台账失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return list(resp.json().get("facts", []))
+
+
+def facts_lint(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/facts/lint", timeout=30)
+    except requests.RequestException as exc:
+        raise ApiError(f"事实校验失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"事实校验失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+# ---------------------------------------------------------------- 经历原子
+
+def atoms(base_url: str = DEFAULT_BASE_URL, *, approved: bool | None = None, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    params = {} if approved is None else {"approved": str(approved).lower()}
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/profile/atoms", params=params, timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取经历原子失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取经历原子失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def extract_atoms(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.post(f"{base_url.rstrip('/')}/profile/atoms/extract", timeout=60)
+    except requests.RequestException as exc:
+        raise ApiError(f"抽取经历原子失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"抽取经历原子失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def set_atom_approved(atom_id: str, approved: bool, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.patch(f"{base_url.rstrip('/')}/profile/atoms/{atom_id}", json={"approved": approved}, timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"更新原子状态失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"更新原子状态失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def delete_atom(atom_id: str, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> None:
+    http = _http(session)
+    try:
+        resp = http.delete(f"{base_url.rstrip('/')}/profile/atoms/{atom_id}", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"删除原子失败：{exc}") from exc
+    if resp.status_code != 204:
+        raise ApiError(f"删除原子失败（HTTP {resp.status_code}）：{_detail(resp)}")
+
+
+# ---------------------------------------------------------------- 多岗位洞察
+
+def clusters(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/insights/clusters", timeout=30)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取投递聚焦失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取投递聚焦失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def approve_atoms_bulk(kind: str | None = None, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.post(
+            f"{base_url.rstrip('/')}/profile/atoms/approve-bulk",
+            json={"kind": kind} if kind else {},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        raise ApiError(f"批量确认失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"批量确认失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+# ---------------------------------------------------------------- 岗位发现
+
+def job_sources(base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> list[dict[str, Any]]:
+    http = _http(session)
+    try:
+        resp = http.get(f"{base_url.rstrip('/')}/discovery/sources", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"读取岗位来源失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取岗位来源失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return list(resp.json().get("sources", []))
+
+
+def discovery_search(
+    query: str,
+    *,
+    sources: list[str] | None = None,
+    boards: dict[str, str] | None = None,
+    limit: int = 30,
+    base_url: str = DEFAULT_BASE_URL,
+    session: Any = None,
+) -> dict[str, Any]:
+    http = _http(session)
+    payload = {"query": query, "sources": sources, "boards": boards or {}, "limit": limit}
+    try:
+        resp = http.post(f"{base_url.rstrip('/')}/discovery/search", json=payload, timeout=120)
+    except requests.RequestException as exc:
+        raise ApiError(f"搜索岗位失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"搜索岗位失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def discovery_leads(base_url: str = DEFAULT_BASE_URL, *, status: str = "new", limit: int = 50, session: Any = None) -> list[dict[str, Any]]:
+    http = _http(session)
+    try:
+        resp = http.get(
+            f"{base_url.rstrip('/')}/discovery/leads",
+            params={"status": status, "limit": limit},
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        raise ApiError(f"读取候选岗位失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"读取候选岗位失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return list(resp.json())
+
+
+def save_lead(lead_id: int, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> dict[str, Any]:
+    http = _http(session)
+    try:
+        resp = http.post(f"{base_url.rstrip('/')}/discovery/leads/{lead_id}/save", timeout=20)
+    except requests.RequestException as exc:
+        raise ApiError(f"导入岗位失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"导入岗位失败（HTTP {resp.status_code}）：{_detail(resp)}")
+    return dict(resp.json())
+
+
+def ignore_lead(lead_id: int, base_url: str = DEFAULT_BASE_URL, *, session: Any = None) -> None:
+    http = _http(session)
+    try:
+        resp = http.post(f"{base_url.rstrip('/')}/discovery/leads/{lead_id}/ignore", timeout=15)
+    except requests.RequestException as exc:
+        raise ApiError(f"忽略候选岗位失败：{exc}") from exc
+    if resp.status_code != 200:
+        raise ApiError(f"忽略候选岗位失败（HTTP {resp.status_code}）：{_detail(resp)}")

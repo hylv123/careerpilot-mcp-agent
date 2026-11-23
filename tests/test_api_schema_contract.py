@@ -37,6 +37,8 @@ class AnalyzeResponseContractTests(unittest.TestCase):
         "interview_questions",
         "saved",
         "save_error",
+        "tailored_resume",
+            "match_assessment",
     }
 
     def test_field_set_is_stable(self) -> None:

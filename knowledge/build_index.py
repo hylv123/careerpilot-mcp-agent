@@ -26,6 +26,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.safety import redact_sensitive
+from knowledge.corpus import EXCLUDED_SAMPLE_FILES, indexed_files
 
 load_dotenv()
 
@@ -51,13 +52,8 @@ embeddings = DashScopeEmbeddings(
 )
 
 def _load_docs() -> list:
-    """加载公开笔记与本地私有资料；虚构示例简历不参与索引。"""
-    files = [
-        path for path in sorted(DOCS_DIR.glob("*.md"))
-        if path.name not in EXCLUDED_SAMPLE_FILES
-    ]
-    if PRIVATE_DIR.exists():
-        files += sorted(PRIVATE_DIR.glob("*.md"))
+    """加载公开笔记与本地私有资料；范围由 knowledge.corpus 统一决定。"""
+    files = indexed_files()
 
     docs = []
     redaction_counts: dict[str, int] = {}

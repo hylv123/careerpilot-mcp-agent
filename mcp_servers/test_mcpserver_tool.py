@@ -15,9 +15,6 @@ from agent.mcp_tools import get_mcp_tools
 EXPECTED_TOOLS = {
     "get_resume",
     "search_projects",
-    "save_job",
-    "update_status",
-    "list_jobs",
     "generate_resume_md",
     "generate_interview_prep",
 }

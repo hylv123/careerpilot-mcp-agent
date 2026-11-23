@@ -16,6 +16,8 @@ from typing import Any
 from langgraph.errors import GraphRecursionError
 
 from agent.graph import build_graph
+from services.matching import assess_match
+from services.resume_md import render_resume_markdown
 
 MAX_RECURSION_LIMIT = 50
 
@@ -87,13 +89,22 @@ def run_analysis(jd: str) -> dict[str, Any]:
         build_initial_state(jd),
         config={"recursion_limit": MAX_RECURSION_LIMIT},
     )
+    analysis = result.get("analysis", {})
+    tailored = dict(result.get("tailored_resume") or {})
+    if tailored.get("bullets"):
+        # 渲染放在这里而不是图里：图只管"写什么"，排版是纯确定性工作，
+        # 也方便接口/CLI 直接拿到可下载的 Markdown。
+        tailored["markdown"] = render_resume_markdown(tailored, analysis)
+
     return {
         "status": "done",
-        "analysis": result.get("analysis", {}),
+        "analysis": analysis,
         "evidence_count": len(result.get("evidence", [])),
         "report_text": result.get("report_text", ""),
         "resume_bullets": result.get("resume_bullets", []),
         "interview_questions": result.get("interview_questions", []),
+        "tailored_resume": tailored,
         "saved": bool(result.get("saved", False)),
         "save_error": result.get("save_error", ""),
+        "match_assessment": assess_match(analysis, result.get("evidence", [])),
     }

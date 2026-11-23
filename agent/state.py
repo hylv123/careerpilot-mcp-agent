@@ -12,6 +12,8 @@ class State(TypedDict):
     report_text: str
     resume_bullets: list[dict[str, Any]]
     interview_questions: list[dict[str, Any]]
+    # JD 定制简历（结构化）：headline/summary/skill_groups/bullets。
+    tailored_resume: dict[str, Any]
     # 岗位落库是"副作用"，必须能被调用方看见，否则会出现
     # "任务 done、报告正常，但 SQLite 里根本没有这条记录"的静默丢失。
     # 之前 save 节点只把工具返回值塞进 messages，结构化字段没有任何痕迹。

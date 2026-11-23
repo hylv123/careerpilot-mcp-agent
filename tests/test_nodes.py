@@ -22,8 +22,9 @@ from agent.schemas import (
     InterviewQuestion,
     InterviewQuestionList,
     JobAnalysisGraph,
-    ResumeBullet,
-    ResumeBulletList,
+    SkillGroup,
+    TailoredBullet,
+    TailoredResume,
 )
 
 ANALYSIS = {
@@ -118,26 +119,213 @@ class MatchEvidenceTests(unittest.TestCase):
 
 
 class RewriteNodeTests(unittest.TestCase):
-    def test_inputs_are_json_strings(self) -> None:
+    def test_inputs_are_json_strings_and_output_is_tailored_resume(self) -> None:
         captured: dict = {}
-        parsed = ResumeBulletList(
-            bullets=[ResumeBullet(bullet="用 RAG 做过检索", evidence_source="项目经历.md")]
+        parsed = TailoredResume(
+            headline="做过 RAG 检索链路的 AI 应用开发",
+            summary="用 LangChain 搭过检索链路。",
+            skill_groups=[SkillGroup(category="框架与工具", items=["LangChain"])],
+            bullets=[
+                TailoredBullet(
+                    project="RAG 项目",
+                    summary="检索链路",
+                    bullet="用 RAG 做过检索",
+                    jd_requirement="RAG",
+                    evidence_source="项目经历.md",
+                    evidence_span="做过 RAG 项目",
+                )
+            ],
         )
 
         def fake_invoke_structured(chain, inputs, schema):
             captured.update(inputs)
             return parsed
 
+        state = _state(analysis={**ANALYSIS, "requirements": ["Python", "RAG"]})
         with patch.object(graph, "_get_llm", return_value=_FakeModel()), \
              patch.object(graph, "invoke_structured", side_effect=fake_invoke_structured):
-            update = graph.rewrite_resume(_state())
+            update = graph.rewrite_resume(state)
 
         self.assertIsInstance(captured["analysis"], str)
         self.assertIsInstance(captured["evidence"], str)
         self.assertEqual(json.loads(captured["analysis"])["job_title"], "AI 研发实习生")
+
+        tailored = update["tailored_resume"]
+        self.assertEqual(tailored["headline"], "做过 RAG 检索链路的 AI 应用开发")
+        self.assertEqual(len(tailored["bullets"]), 1)
+        self.assertEqual(tailored["bullets"][0]["project"], "RAG 项目")
+        # 证据里没有 LangChain，技能词必须被过滤掉
+        self.assertEqual(tailored["skill_groups"], [])
+
+        # 兼容契约：resume_bullets 仍然只有 bullet/evidence_source 两个键
         self.assertEqual(len(update["resume_bullets"]), 1)
-        self.assertEqual(update["resume_bullets"][0]["evidence_source"], "项目经历.md")
+        self.assertEqual(
+            set(update["resume_bullets"][0]), {"bullet", "evidence_source"}
+        )
         self.assertIn("来源", update["messages"][0][1])
+
+
+class AtomInjectionTests(unittest.TestCase):
+    def test_approved_atoms_are_injected_and_counted(self) -> None:
+        parsed = TailoredResume(
+            headline="做过 RAG 检索链路",
+            summary="用 LangChain 搭过检索链路。",
+            skill_groups=[],
+            bullets=[
+                TailoredBullet(
+                    project="RAG 项目",
+                    summary="检索链路",
+                    bullet="用 RAG 做过检索",
+                    jd_requirement="RAG",
+                    evidence_source="项目经历.md",
+                    evidence_span="做过 RAG 项目",
+                    atom_id="atom-1",
+                )
+            ],
+        )
+        captured: dict = {}
+
+        def fake_invoke_structured(chain, inputs, schema):
+            captured.update(inputs)
+            return parsed
+
+        atom = {"id": "atom-1", "project": "CareerPilot", "span": "做过 RAG 项目", "kind": "experience"}
+        state = _state(analysis={**ANALYSIS, "requirements": ["Python", "RAG"]})
+        with patch.object(graph, "_get_llm", return_value=_FakeModel()), \
+             patch.object(graph, "invoke_structured", side_effect=fake_invoke_structured), \
+             patch.object(graph, "atoms_service") as atoms_service:
+            atoms_service.approved_experience_atoms.return_value = [atom]
+            update = graph.rewrite_resume(state)
+
+        self.assertIn("atom-1", captured["atoms_block"])
+        self.assertEqual(update["tailored_resume"]["atom_stats"]["cited"], 1)
+        self.assertEqual(update["tailored_resume"]["atom_stats"]["approved"], 1)
+
+class PromptVariableTests(unittest.TestCase):
+    """prompt 里加变量却忘在调用处传，只有真跑一次才会炸。
+
+    2026-11-22 真实踩到过：给简历节点加 {style_correction} 时误改了面试题节点的
+    human 模板，单测因为 patch 掉 invoke_structured 而全绿，真实运行直接
+    KeyError。这里让 prompt 真的格式化一次（不 patch invoke_structured）。
+    """
+
+    class _EchoModel:
+        def __init__(self, parsed):
+            self.parsed = parsed
+
+        def with_structured_output(self, schema, method=None):
+            from langchain_core.runnables import RunnableLambda
+
+            return RunnableLambda(lambda _prompt: self.parsed)
+
+    def test_questions_prompt_variables_match_inputs(self) -> None:
+        parsed = InterviewQuestionList(
+            questions=[
+                InterviewQuestion(
+                    question=f"问题{i}",
+                    answer_points=[f"要点{i}"],
+                    evidence_source="项目经历.md",
+                )
+                for i in range(5)
+            ]
+        )
+        with patch.object(graph, "_get_llm", return_value=self._EchoModel(parsed)):
+            update = graph.gen_questions(_state())
+
+        self.assertEqual(len(update["interview_questions"]), 5)
+
+    def test_resume_prompt_variables_match_inputs(self) -> None:
+        parsed = TailoredResume(
+            headline="做过 RAG 检索链路",
+            summary="用 LangChain 搭过检索链路。",
+            skill_groups=[],
+            bullets=[
+                TailoredBullet(
+                    project="RAG 项目",
+                    summary="检索链路",
+                    bullet="用 RAG 做过检索",
+                    jd_requirement="RAG",
+                    evidence_source="项目经历.md",
+                    evidence_span="做过 RAG 项目",
+                )
+            ],
+        )
+        state = _state(analysis={**ANALYSIS, "requirements": ["Python", "RAG"]})
+        with patch.object(graph, "_get_llm", return_value=self._EchoModel(parsed)):
+            update = graph.rewrite_resume(state)
+
+        self.assertEqual(len(update["tailored_resume"]["bullets"]), 1)
+
+
+class StyleRetryTests(unittest.TestCase):
+    """命中 AI 腔时只重写一次，且不改变事实链路。"""
+
+    def _run(self, first, second=None):
+        calls: list[dict] = []
+        results = [first] if second is None else [first, second]
+
+        def fake_invoke_structured(chain, inputs, schema):
+            calls.append(inputs)
+            return results[len(calls) - 1]
+
+        state = _state(analysis={**ANALYSIS, "requirements": ["Python", "RAG"]})
+        with patch.object(graph, "_get_llm", return_value=_FakeModel()), \
+             patch.object(graph, "invoke_structured", side_effect=fake_invoke_structured):
+            update = graph.rewrite_resume(state)
+        return update, calls
+
+    @staticmethod
+    def _resume(headline: str, summary: str, bullet: str) -> TailoredResume:
+        return TailoredResume(
+            headline=headline,
+            summary=summary,
+            skill_groups=[],
+            bullets=[
+                TailoredBullet(
+                    project="RAG 项目",
+                    summary="检索链路",
+                    bullet=bullet,
+                    jd_requirement="RAG",
+                    evidence_source="项目经历.md",
+                    evidence_span="做过 RAG 项目",
+                )
+            ],
+        )
+
+    def test_clean_first_version_is_not_retried(self) -> None:
+        update, calls = self._run(
+            self._resume("做过 RAG 检索链路", "用 LangChain 搭过检索链路。", "用 RAG 做过检索")
+        )
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(update["tailored_resume"]["style"], {"issues": [], "retried": False})
+
+    def test_buzzword_version_is_rewritten_once(self) -> None:
+        dirty = self._resume("赋能业务闭环", "致力于打造生态，全链路助力。", "赋能检索闭环")
+        clean = self._resume("做过 RAG 检索链路", "用 LangChain 搭过检索链路。", "用 RAG 做过检索")
+        update, calls = self._run(dirty, clean)
+        self.assertEqual(len(calls), 2)
+        self.assertIn("赋能", calls[1]["style_correction"])
+        self.assertEqual(update["tailored_resume"]["style"], {"issues": [], "retried": True})
+        self.assertEqual(update["tailored_resume"]["headline"], "做过 RAG 检索链路")
+
+    def test_retry_failure_keeps_first_version(self) -> None:
+        dirty = self._resume("赋能业务闭环", "致力于打造生态。", "赋能检索闭环")
+        calls: list[dict] = []
+
+        def fake_invoke_structured(chain, inputs, schema):
+            calls.append(inputs)
+            if len(calls) == 1:
+                return dirty
+            raise RuntimeError("模型又挂了")
+
+        state = _state(analysis={**ANALYSIS, "requirements": ["Python", "RAG"]})
+        with patch.object(graph, "_get_llm", return_value=_FakeModel()), \
+             patch.object(graph, "invoke_structured", side_effect=fake_invoke_structured):
+            update = graph.rewrite_resume(state)
+
+        self.assertEqual(len(calls), 2)
+        self.assertIs(update["tailored_resume"]["style"]["retried"], False)
+        self.assertTrue(update["tailored_resume"]["style"]["issues"])
 
 
 class QuestionsNodeTests(unittest.TestCase):

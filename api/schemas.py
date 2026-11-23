@@ -65,6 +65,12 @@ class AnalyzeResponse(BaseModel):
         default="",
         description="saved 为 False 时的原因；saved 为 True 时为空串。",
     )
+    tailored_resume: dict[str, Any] = Field(
+        default_factory=dict,
+        description="JD 定制简历：headline/summary/skill_groups/bullets 与渲染好的 markdown。"
+        "每条要点都通过真实性校验（来源、项目名、技能词、数字均可在证据中核对）。",
+    )
+    match_assessment: dict[str, Any] = Field(default_factory=dict)
 
 
 class TaskAccepted(BaseModel):
@@ -107,3 +113,59 @@ class TaskStatusResponse(BaseModel):
     error: str = Field(default="")
     updated_at: int = Field(default=0)
     result: AnalyzeResponse | None = Field(default=None)
+
+
+class JobCreateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    company: str = Field(min_length=1, max_length=200)
+    jd: str = Field(min_length=10, max_length=10000)
+    source_url: str = Field(default="", max_length=2000)
+    deadline: str = Field(default="", max_length=32)
+    notes: str = Field(default="", max_length=5000)
+
+
+class JobUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    company: str | None = Field(default=None, min_length=1, max_length=200)
+    jd: str | None = Field(default=None, min_length=10, max_length=10000)
+    status: str | None = None
+    source_url: str | None = Field(default=None, max_length=2000)
+    deadline: str | None = Field(default=None, max_length=32)
+    notes: str | None = Field(default=None, max_length=5000)
+
+
+class MaterialCreateRequest(BaseModel):
+    """新建一份候选人资料（Markdown）。"""
+
+    name: str = Field(min_length=1, max_length=60, description="资料名，会作为文件名")
+    content: str = Field(min_length=1, max_length=200_000, description="Markdown 正文")
+    note: str = Field(default="", max_length=200, description="这次保存的备注")
+
+
+class MaterialUpdateRequest(BaseModel):
+    """覆盖一份资料；服务端会先把旧内容存成历史版本。"""
+
+    content: str = Field(min_length=1, max_length=200_000)
+    note: str = Field(default="", max_length=200)
+
+
+class AtomUpdateRequest(BaseModel):
+    """确认或撤回一条经历原子。"""
+
+    approved: bool
+
+
+class AtomBulkRequest(BaseModel):
+    """批量确认原子；可按类型（experience/knowledge）或来源文件名过滤。"""
+
+    kind: str | None = Field(default=None, description="experience | knowledge")
+    source: str | None = Field(default=None, description="来源文件名后缀，例如 简历_示例.md")
+
+
+class DiscoverySearchRequest(BaseModel):
+    """岗位发现请求。只能选内置来源，不允许传自定义 URL。"""
+
+    query: str = Field(default="", max_length=200, description="关键词，中文/英文均可")
+    sources: list[str] | None = Field(default=None, description="来源 id 列表；空表示全部")
+    boards: dict[str, str] = Field(default_factory=dict, description="需要 board slug 的来源参数")
+    limit: int = Field(default=30, ge=1, le=100, description="每个来源最多取多少条")
